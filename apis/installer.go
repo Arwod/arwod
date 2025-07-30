@@ -11,7 +11,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
-	// "github.com/pocketbase/pocketbase/tools/osutils"
+	"github.com/pocketbase/pocketbase/tools/osutils"
 )
 
 // DefaultInstallerFunc is the default PocketBase installer function.
@@ -29,7 +29,7 @@ func DefaultInstallerFunc(app core.App, systemSuperuser *core.Record, baseURL st
 
 	// launch url (ignore errors and always print a help text as fallback)
 	url := fmt.Sprintf("%s/_/#/pbinstal/%s", strings.TrimRight(baseURL, "/"), token)
-	// _ = osutils.LaunchURL(url)
+	_ = osutils.LaunchURL(url)
 	color.Magenta("\n(!) Launch the URL below in the browser if it hasn't been open already to create your first superuser account:")
 	color.New(color.Bold).Add(color.FgCyan).Println(url)
 	color.New(color.FgHiBlack, color.Italic).Printf("(you can also create your first superuser by running: %s superuser upsert EMAIL PASS)\n\n", executablePath())
