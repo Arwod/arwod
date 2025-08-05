@@ -155,6 +155,7 @@ func createSysDeptCollection(txApp core.App) error {
 
 // 删除users表
 func deleteUsersTable(txApp core.App) error {
+	return nil
 	// 查找users表
 	usersCollection, err := txApp.FindCollectionByNameOrId("users")
 	if err != nil {
