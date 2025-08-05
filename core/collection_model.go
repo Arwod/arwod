@@ -415,6 +415,7 @@ func NewBaseCollection(name string, optId ...string) *Collection {
 
 	m.initDefaultId()
 	m.initDefaultFields()
+	m.initBaseCollectionRule()
 
 	return m
 }
@@ -456,6 +457,7 @@ func NewAuthCollection(name string, optId ...string) *Collection {
 	m.initDefaultId()
 	m.initDefaultFields()
 	m.setDefaultAuthOptions()
+	m.initAuthCollectionRule()
 
 	return m
 }
@@ -1052,6 +1054,23 @@ func (c *Collection) initVerifiedField() {
 		// enforce system defaults
 		field.System = true
 	}
+}
+
+func (c *Collection) initBaseCollectionRule() {
+	c.ListRule = types.Pointer("")
+	c.ViewRule = types.Pointer("")
+	c.CreateRule = types.Pointer("")
+	c.UpdateRule = types.Pointer("")
+	c.DeleteRule = types.Pointer("")
+}
+
+func (c *Collection) initAuthCollectionRule() {
+	rule := "id = @request.auth.id"
+	c.ListRule = types.Pointer(rule)
+	c.ViewRule = types.Pointer(rule)
+	c.CreateRule = types.Pointer(rule)
+	c.UpdateRule = types.Pointer(rule)
+	c.DeleteRule = types.Pointer(rule)
 }
 
 func (c *Collection) fieldIndexName(field string) string {
