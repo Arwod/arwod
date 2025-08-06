@@ -42,8 +42,8 @@ migrate((app) => {
       "body": "<p>Hello,</p>\n<p>Click on the button below to confirm your new email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirm new email</a>\n</p>\n<p><i>If you didn't ask to change your email address, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
       "subject": "Confirm your {APP_NAME} new email address"
     },
-    "createRule": null,
-    "deleteRule": null,
+    "createRule": "id = @request.auth.id",
+    "deleteRule": "id = @request.auth.id",
     "emailChangeToken": {
       "duration": 1800
     },
@@ -169,7 +169,7 @@ migrate((app) => {
     },
     "system": true,
     "type": "auth",
-    "updateRule": null,
+    "updateRule": "id = @request.auth.id",
     "verificationTemplate": {
       "body": "<p>Hello,</p>\n<p>Thank you for joining us at {APP_NAME}.</p>\n<p>Click on the button below to verify your email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-verification/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Verify</a>\n</p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
       "subject": "Verify your {APP_NAME} email"
@@ -218,8 +218,8 @@ func init() {
 				"body": "<p>Hello,</p>\n<p>Click on the button below to confirm your new email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirm new email</a>\n</p>\n<p><i>If you didn't ask to change your email address, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
 				"subject": "Confirm your {APP_NAME} new email address"
 			},
-			"createRule": null,
-			"deleteRule": null,
+			"createRule": "id = @request.auth.id",
+			"deleteRule": "id = @request.auth.id",
 			"emailChangeToken": {
 				"duration": 1800
 			},
@@ -345,7 +345,7 @@ func init() {
 			},
 			"system": true,
 			"type": "auth",
-			"updateRule": null,
+			"updateRule": "id = @request.auth.id",
 			"verificationTemplate": {
 				"body": "<p>Hello,</p>\n<p>Thank you for joining us at {APP_NAME}.</p>\n<p>Click on the button below to verify your email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-verification/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Verify</a>\n</p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
 				"subject": "Verify your {APP_NAME} email"
@@ -483,8 +483,8 @@ migrate((app) => {
       "body": "<p>Hello,</p>\n<p>Click on the button below to confirm your new email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirm new email</a>\n</p>\n<p><i>If you didn't ask to change your email address, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
       "subject": "Confirm your {APP_NAME} new email address"
     },
-    "createRule": null,
-    "deleteRule": null,
+    "createRule": "id = @request.auth.id",
+    "deleteRule": "id = @request.auth.id",
     "emailChangeToken": {
       "duration": 1800
     },
@@ -610,7 +610,7 @@ migrate((app) => {
     },
     "system": false,
     "type": "auth",
-    "updateRule": null,
+    "updateRule": "id = @request.auth.id",
     "verificationTemplate": {
       "body": "<p>Hello,</p>\n<p>Thank you for joining us at {APP_NAME}.</p>\n<p>Click on the button below to verify your email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-verification/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Verify</a>\n</p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
       "subject": "Verify your {APP_NAME} email"
@@ -662,8 +662,8 @@ func init() {
 				"body": "<p>Hello,</p>\n<p>Click on the button below to confirm your new email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirm new email</a>\n</p>\n<p><i>If you didn't ask to change your email address, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
 				"subject": "Confirm your {APP_NAME} new email address"
 			},
-			"createRule": null,
-			"deleteRule": null,
+			"createRule": "id = @request.auth.id",
+			"deleteRule": "id = @request.auth.id",
 			"emailChangeToken": {
 				"duration": 1800
 			},
@@ -789,7 +789,7 @@ func init() {
 			},
 			"system": false,
 			"type": "auth",
-			"updateRule": null,
+			"updateRule": "id = @request.auth.id",
 			"verificationTemplate": {
 				"body": "<p>Hello,</p>\n<p>Thank you for joining us at {APP_NAME}.</p>\n<p>Click on the button below to verify your email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-verification/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Verify</a>\n</p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
 				"subject": "Verify your {APP_NAME} email"
@@ -895,7 +895,7 @@ func TestAutomigrateCollectionUpdate(t *testing.T) {
 			`
 /// <reference path="../pb_data/types.d.ts" />
 migrate((app) => {
-  const collection = app.findCollectionByNameOrId("@TEST_RANDOM")
+  const collection = app.findCollectionByNameOrId("pbc_@TEST_RANDOM")
 
   // update collection data
   unmarshal({
@@ -906,8 +906,8 @@ migrate((app) => {
     },
     "indexes": [
       "create index test1 on test123_update (f1_name)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_tokenKey_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123_update` + "`" + ` (` + "`" + `tokenKey` + "`" + `)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_email_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123_update` + "`" + ` (` + "`" + `email` + "`" + `) WHERE ` + "`" + `email` + "`" + ` != ''"
+      "CREATE UNIQUE INDEX ` + "`" + `idx_tokenKey_pbc_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123_update` + "`" + ` (` + "`" + `tokenKey` + "`" + `)",
+      "CREATE UNIQUE INDEX ` + "`" + `idx_email_pbc_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123_update` + "`" + ` (` + "`" + `email` + "`" + `) WHERE ` + "`" + `email` + "`" + ` != ''"
     ],
     "listRule": "@request.auth.id != ''",
     "name": "test123_update",
@@ -952,19 +952,19 @@ migrate((app) => {
 
   return app.save(collection)
 }, (app) => {
-  const collection = app.findCollectionByNameOrId("@TEST_RANDOM")
+  const collection = app.findCollectionByNameOrId("pbc_@TEST_RANDOM")
 
   // update collection data
   unmarshal({
-    "createRule": null,
+    "createRule": "id = @request.auth.id",
     "deleteRule": "id = \"3\"",
     "fileToken": {
       "duration": 180
     },
     "indexes": [
       "create index test1 on test123 (f1_name)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_tokenKey_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123` + "`" + ` (` + "`" + `tokenKey` + "`" + `)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_email_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123` + "`" + ` (` + "`" + `email` + "`" + `) WHERE ` + "`" + `email` + "`" + ` != ''"
+      "CREATE UNIQUE INDEX ` + "`" + `idx_tokenKey_pbc_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123` + "`" + ` (` + "`" + `tokenKey` + "`" + `)",
+      "CREATE UNIQUE INDEX ` + "`" + `idx_email_pbc_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123` + "`" + ` (` + "`" + `email` + "`" + `) WHERE ` + "`" + `email` + "`" + ` != ''"
     ],
     "listRule": "@request.auth.id != '' && 1 != 2",
     "name": "test123",
@@ -1021,7 +1021,7 @@ import (
 
 func init() {
 	m.Register(func(app core.App) error {
-		collection, err := app.FindCollectionByNameOrId("@TEST_RANDOM")
+		collection, err := app.FindCollectionByNameOrId("pbc_@TEST_RANDOM")
 		if err != nil {
 			return err
 		}
@@ -1035,8 +1035,8 @@ func init() {
 			},
 			"indexes": [
 				"create index test1 on test123_update (f1_name)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_tokenKey_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123_update` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `tokenKey` + "` + \"`\" + `" + `)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_email_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123_update` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + `) WHERE ` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + ` != ''"
+				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_tokenKey_pbc_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123_update` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `tokenKey` + "` + \"`\" + `" + `)",
+				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_email_pbc_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123_update` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + `) WHERE ` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + ` != ''"
 			],
 			"listRule": "@request.auth.id != ''",
 			"name": "test123_update",
@@ -1087,22 +1087,22 @@ func init() {
 
 		return app.Save(collection)
 	}, func(app core.App) error {
-		collection, err := app.FindCollectionByNameOrId("@TEST_RANDOM")
+		collection, err := app.FindCollectionByNameOrId("pbc_@TEST_RANDOM")
 		if err != nil {
 			return err
 		}
 
 		// update collection data
 		if err := json.Unmarshal([]byte(` + "`" + `{
-			"createRule": null,
+			"createRule": "id = @request.auth.id",
 			"deleteRule": "id = \"3\"",
 			"fileToken": {
 				"duration": 180
 			},
 			"indexes": [
 				"create index test1 on test123 (f1_name)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_tokenKey_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `tokenKey` + "` + \"`\" + `" + `)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_email_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + `) WHERE ` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + ` != ''"
+				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_tokenKey_pbc_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `tokenKey` + "` + \"`\" + `" + `)",
+				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_email_pbc_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + `) WHERE ` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + ` != ''"
 			],
 			"listRule": "@request.auth.id != '' && 1 != 2",
 			"name": "test123",
@@ -1165,7 +1165,6 @@ func init() {
 			collection.ListRule = types.Pointer("@request.auth.id != '' && 1 != 2")
 			collection.ViewRule = types.Pointer(`id = "1"`)
 			collection.UpdateRule = types.Pointer(`id = "2"`)
-			collection.CreateRule = nil
 			collection.DeleteRule = types.Pointer(`id = "3"`)
 			collection.Indexes = types.JSONArray[string]{"create index test1 on test123 (f1_name)"}
 			collection.ManageRule = types.Pointer("1 != 2")
@@ -1253,6 +1252,7 @@ func init() {
 
 			fullPath := filepath.Join(migrationsDir, files[0].Name())
 			content, err := os.ReadFile(fullPath)
+
 			if err != nil {
 				t.Fatalf("Failed to read the generated migration file: %v", err)
 			}
@@ -1265,7 +1265,7 @@ func init() {
 				`\w+`,
 			)
 			if !list.ExistInSliceWithRegex(contentStr, []string{expectedTemplate}) {
-				t.Fatalf("Expected template \n%v \ngot \n%v", s.expectedTemplate, contentStr)
+				t.Fatalf("hhhhh:%s\nExpected template \n%v \ngot \n%v", fullPath, s.expectedTemplate, contentStr)
 			}
 		})
 	}
