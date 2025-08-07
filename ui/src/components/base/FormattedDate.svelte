@@ -4,23 +4,23 @@
 
     export let date = "";
 
-    $: dateOnly = date ? date.substring(0, 10) : null;
-
-    $: timeOnly = date ? date.substring(10, 19) : null;
+    $: localDateTime = date ? CommonHelper.formatToLocalDate(date) : null;
+    $: localDateOnly = localDateTime ? localDateTime.substring(0, 10) : null;
+    $: localTimeOnly = localDateTime ? localDateTime.substring(11, 19) : null;
 
     const tooltipData = {
         // generate the tooltip text as getter to speed up the initial load
         // in case the component is used with large number of items
         get text() {
-            return CommonHelper.formatToLocalDate(date) + " Local";
+            return date ? date.replace("Z", " UTC") : "";
         },
     };
 </script>
 
 {#if date}
     <div class="datetime" use:tooltip={tooltipData}>
-        <div class="date">{dateOnly}</div>
-        <div class="time">{timeOnly} UTC</div>
+        <div class="date">{localDateOnly}</div>
+        <div class="time">{localTimeOnly} Local</div>
     </div>
 {:else}
     <span class="txt txt-hint">N/A</span>
