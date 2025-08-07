@@ -7,8 +7,6 @@ import (
 	"github.com/pocketbase/pocketbase/tools/types"
 )
 
-
-
 func init() {
 	core.AppMigrations.Register(func(txApp core.App) error {
 		// 删除users表（如果存在）
@@ -123,19 +121,14 @@ func createSysDeptCollection(txApp core.App) error {
 
 	// 添加字段（parent_id将在addRelationFields中添加）
 	col.Fields.Add(&core.TextField{
-		Name:     "ancestors",
-		Required: false,
-		Max:      50,
-	})
-	col.Fields.Add(&core.TextField{
 		Name:     "name",
 		Required: true,
 		Max:      30,
 	})
-	col.Fields.Add(&core.NumberField{
-		Name:     "order_num",
+	col.Fields.Add(&core.TextField{
+		Name:     "ancestors",
 		Required: false,
-		Min:      types.Pointer(0.0),
+		Max:      50,
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "leader",
@@ -162,6 +155,16 @@ func createSysDeptCollection(txApp core.App) error {
 		Required:  false,
 		MaxSelect: 1,
 		Values:    []string{"0", "2"},
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      500,
+	})
+	col.Fields.Add(&core.NumberField{
+		Name:     "order_num",
+		Required: false,
+		Min:      types.Pointer(0.0),
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "created_by",
@@ -208,27 +211,28 @@ func createSysDictTypeCollection(txApp core.App) error {
 		Values:    []string{"0", "1"},
 	})
 	col.Fields.Add(&core.TextField{
-		Name:     "create_by",
-		Required: false,
-		Max:      64,
-	})
-	col.Fields.Add(&core.DateField{
-		Name:     "created",
-		Required: false,
-	})
-	col.Fields.Add(&core.TextField{
-		Name:     "update_by",
-		Required: false,
-		Max:      64,
-	})
-	col.Fields.Add(&core.DateField{
-		Name:     "updated",
-		Required: false,
-	})
-	col.Fields.Add(&core.TextField{
 		Name:     "remark",
 		Required: false,
 		Max:      500,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "created_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.AutodateField{
+		Name:     "created",
+		OnCreate: true,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "updated_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.AutodateField{
+		Name:     "updated",
+		OnCreate: true,
+		OnUpdate: true,
 	})
 
 	return txApp.Save(col)
@@ -241,11 +245,6 @@ func createSysDictDataCollection(txApp core.App) error {
 
 	col.Fields.Add(&core.NumberField{
 		Name:     "code",
-		Required: false,
-		Min:      types.Pointer(0.0),
-	})
-	col.Fields.Add(&core.NumberField{
-		Name:     "order_num",
 		Required: false,
 		Min:      types.Pointer(0.0),
 	})
@@ -287,27 +286,33 @@ func createSysDictDataCollection(txApp core.App) error {
 		Values:    []string{"0", "1"},
 	})
 	col.Fields.Add(&core.TextField{
-		Name:     "create_by",
-		Required: false,
-		Max:      64,
-	})
-	col.Fields.Add(&core.DateField{
-		Name:     "created",
-		Required: false,
-	})
-	col.Fields.Add(&core.TextField{
-		Name:     "update_by",
-		Required: false,
-		Max:      64,
-	})
-	col.Fields.Add(&core.DateField{
-		Name:     "updated",
-		Required: false,
-	})
-	col.Fields.Add(&core.TextField{
 		Name:     "remark",
 		Required: false,
 		Max:      500,
+	})
+	col.Fields.Add(&core.NumberField{
+		Name:     "order_num",
+		Required: false,
+		Min:      types.Pointer(0.0),
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "created_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.AutodateField{
+		Name:     "created",
+		OnCreate: true,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "updated_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.AutodateField{
+		Name:     "updated",
+		OnCreate: true,
+		OnUpdate: true,
 	})
 
 	return txApp.Save(col)
@@ -340,27 +345,28 @@ func createSysConfigCollection(txApp core.App) error {
 		Values:    []string{"Y", "N"},
 	})
 	col.Fields.Add(&core.TextField{
-		Name:     "create_by",
-		Required: false,
-		Max:      64,
-	})
-	col.Fields.Add(&core.DateField{
-		Name:     "created",
-		Required: false,
-	})
-	col.Fields.Add(&core.TextField{
-		Name:     "update_by",
-		Required: false,
-		Max:      64,
-	})
-	col.Fields.Add(&core.DateField{
-		Name:     "updated",
-		Required: false,
-	})
-	col.Fields.Add(&core.TextField{
 		Name:     "remark",
 		Required: false,
 		Max:      500,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "created_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.AutodateField{
+		Name:     "created",
+		OnCreate: true,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "updated_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.AutodateField{
+		Name:     "updated",
+		OnCreate: true,
+		OnUpdate: true,
 	})
 
 	return txApp.Save(col)
@@ -408,22 +414,28 @@ func createSysLogininforCollection(txApp core.App) error {
 		Max:      255,
 	})
 	col.Fields.Add(&core.TextField{
-		Name:     "create_by",
+		Name:     "remark",
 		Required: false,
-		Max:      64,
-	})
-	col.Fields.Add(&core.DateField{
-		Name:     "created",
-		Required: false,
+		Max:      500,
 	})
 	col.Fields.Add(&core.TextField{
-		Name:     "update_by",
+		Name:     "created_by",
 		Required: false,
 		Max:      64,
 	})
-	col.Fields.Add(&core.DateField{
-		Name:     "updated",
+	col.Fields.Add(&core.AutodateField{
+		Name:     "created",
+		OnCreate: true,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "updated_by",
 		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.AutodateField{
+		Name:     "updated",
+		OnCreate: true,
+		OnUpdate: true,
 	})
 
 	return txApp.Save(col)
@@ -734,16 +746,21 @@ func createSysPostCollection(txApp core.App) error {
 		Required: true,
 		Max:      50,
 	})
-	col.Fields.Add(&core.NumberField{
-		Name:     "order_num",
-		Required: true,
-		Min:      types.Pointer(0.0),
-	})
 	col.Fields.Add(&core.SelectField{
 		Name:      "status",
 		Required:  true,
 		MaxSelect: 1,
 		Values:    []string{"0", "1"},
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      500,
+	})
+	col.Fields.Add(&core.NumberField{
+		Name:     "order_num",
+		Required: false,
+		Min:      types.Pointer(0.0),
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "created_by",
@@ -764,11 +781,6 @@ func createSysPostCollection(txApp core.App) error {
 		OnCreate: true,
 		OnUpdate: true,
 	})
-	col.Fields.Add(&core.TextField{
-		Name:     "remark",
-		Required: false,
-		Max:      500,
-	})
 
 	return txApp.Save(col)
 }
@@ -788,11 +800,6 @@ func createSysRoleCollection(txApp core.App) error {
 		Required: true,
 		Max:      100,
 	})
-	col.Fields.Add(&core.NumberField{
-		Name:     "order_num",
-		Required: true,
-		Min:      types.Pointer(0.0),
-	})
 	col.Fields.Add(&core.SelectField{
 		Name:      "data_scope",
 		Required:  false,
@@ -810,6 +817,16 @@ func createSysRoleCollection(txApp core.App) error {
 		Required:  false,
 		MaxSelect: 1,
 		Values:    []string{"0", "2"},
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      500,
+	})
+	col.Fields.Add(&core.NumberField{
+		Name:     "order_num",
+		Required: false,
+		Min:      types.Pointer(0.0),
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "created_by",
@@ -850,11 +867,6 @@ func createSysMenuCollection(txApp core.App) error {
 		Max:      50,
 	})
 	// parent_id字段将在addRelationFields中添加
-	col.Fields.Add(&core.NumberField{
-		Name:     "order_num",
-		Required: false,
-		Min:      types.Pointer(0.0),
-	})
 	col.Fields.Add(&core.TextField{
 		Name:     "url",
 		Required: false,
@@ -892,6 +904,16 @@ func createSysMenuCollection(txApp core.App) error {
 		Name:     "icon",
 		Required: false,
 		Max:      100,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      500,
+	})
+	col.Fields.Add(&core.NumberField{
+		Name:     "order_num",
+		Required: false,
+		Min:      types.Pointer(0.0),
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "created_by",
@@ -1129,6 +1151,20 @@ func createSysOperLogCollection(txApp core.App) error {
 		Required: false,
 		Min:      types.Pointer(0.0),
 	})
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      500,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "created_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.AutodateField{
+		Name:     "created",
+		OnCreate: true,
+	})
 
 	return txApp.Save(col)
 }
@@ -1167,37 +1203,38 @@ func createSysNoticeCollection(txApp core.App) error {
 		Values:    []string{"0", "1"},
 	})
 
-	// 创建者
-	col.Fields.Add(&core.TextField{
-		Name:     "create_by",
-		Required: false,
-		Max:      64,
-	})
-
-	// 创建时间
-	col.Fields.Add(&core.DateField{
-		Name:     "created",
-		Required: false,
-	})
-
-	// 更新者
-	col.Fields.Add(&core.TextField{
-		Name:     "update_by",
-		Required: false,
-		Max:      64,
-	})
-
-	// 更新时间
-	col.Fields.Add(&core.DateField{
-		Name:     "updated",
-		Required: false,
-	})
-
 	// 备注
 	col.Fields.Add(&core.TextField{
 		Name:     "remark",
 		Required: false,
 		Max:      255,
+	})
+
+	// 创建者
+	col.Fields.Add(&core.TextField{
+		Name:     "created_by",
+		Required: false,
+		Max:      64,
+	})
+
+	// 创建时间
+	col.Fields.Add(&core.AutodateField{
+		Name:     "created",
+		OnCreate: true,
+	})
+
+	// 更新者
+	col.Fields.Add(&core.TextField{
+		Name:     "updated_by",
+		Required: false,
+		Max:      64,
+	})
+
+	// 更新时间
+	col.Fields.Add(&core.AutodateField{
+		Name:     "updated",
+		OnCreate: true,
+		OnUpdate: true,
 	})
 
 	return txApp.Save(col)
