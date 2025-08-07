@@ -71,23 +71,21 @@ var initDataRequests = []DataImportRequest{
 			{"order_num": 2, "label": "失败", "value": "1", "code": 2, "type": "sys_common_status", "dict_type_id": "15xzpv4hl3sitzg", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "停用状态"},
 		},
 	},
+	// 角色信息数据
+	{
+		Table:        TableSysRole,
+		UniqueFields: []string{"key"},
+		Data: []map[string]interface{}{
+			{"name": "超级管理员", "key": "admin", "data_scope": "1", "order_num": 1, "status": "0", "delete_flag": "0", "created_by": "admin", "updated_by": "", "remark": "超级管理员"},
+			{"name": "普通角色", "key": "common", "data_scope": "2", "order_num": 2, "status": "0", "delete_flag": "0", "created_by": "admin", "updated_by": "", "remark": "普通角色"},
+		},
+	},
 	// 系统用户数据
 	{
 		Table:        TableSysUser,
 		UniqueFields: []string{"username"},
 		Data: []map[string]interface{}{
-			{
-				"username":    "admin",
-				"email":       "admin@example.com",
-				"password":    "123!@#qwe",
-				"type":        "00",
-				"status":      "0",
-				"delete_flag": "0",
-				"created_by":  "system",
-				"updated_by":  "system",
-				"remark":      "系统默认管理员账号",
-				"verified":    true,
-			},
+			{"username": "admin", "email": "admin@example.com", "password": "123!@#qwe", "type": "00", "status": "0", "delete_flag": "0", "created_by": "system", "updated_by": "system", "remark": "系统默认管理员账号", "verified": true},
 		},
 	},
 }

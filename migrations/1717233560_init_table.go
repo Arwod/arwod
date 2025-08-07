@@ -847,11 +847,13 @@ func createSysRoleCollection(txApp core.App) error {
 		OnCreate: true,
 		OnUpdate: true,
 	})
-	col.Fields.Add(&core.TextField{
-		Name:     "remark",
-		Required: false,
-		Max:      500,
-	})
+
+	// 为name字段添加唯一索引
+	col.Indexes = append(col.Indexes, fmt.Sprintf(
+		"CREATE UNIQUE INDEX `idx_name_%s` ON `%s` (`name`)",
+		col.Name,
+		col.Name,
+	))
 
 	return txApp.Save(col)
 }
