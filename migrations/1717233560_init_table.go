@@ -7,6 +7,25 @@ import (
 	"github.com/pocketbase/pocketbase/tools/types"
 )
 
+// 表名常量定义
+const (
+	TableSysDept       = "sys_department"      // 部门表
+	TableSysUser       = "sys_user"            // 用户表
+	TableSysPost       = "sys_position"        // 岗位表
+	TableSysRole       = "sys_role"            // 角色表
+	TableSysMenu       = "sys_menu"            // 菜单表
+	TableSysOperLog    = "sys_log"             // 操作日志表
+	TableSysUserRole   = "sys_user_role"       // 用户角色关联表
+	TableSysRoleMenu   = "sys_role_menu"       // 角色菜单关联表
+	TableSysRoleDept   = "sys_role_department" // 角色部门关联表
+	TableSysUserPost   = "sys_user_position"   // 用户岗位关联表
+	TableSysDictType   = "sys_dict_type"       // 字典类型表
+	TableSysDictData   = "sys_dict_data"       // 字典数据表
+	TableSysConfig     = "sys_config"          // 参数配置表
+	TableSysLogininfor = "sys_logininfor"      // 系统访问记录表
+	TableSysUserOnline = "sys_user_online"     // 在线用户记录表
+)
+
 func init() {
 	core.AppMigrations.Register(func(txApp core.App) error {
 		// 删除users表（如果存在）
@@ -16,32 +35,57 @@ func init() {
 
 		// 创建部门表
 		if err := createSysDeptCollection(txApp); err != nil {
-			return fmt.Errorf("sys_dept creation error: %w", err)
+			return fmt.Errorf("%s creation error: %w", TableSysDept, err)
 		}
 
 		// 创建用户表（在所有基础表创建之后，关联表之前）
 		if err := createSysUserCollection(txApp); err != nil {
-			return fmt.Errorf("sys_user creation error: %w", err)
+			return fmt.Errorf("%s creation error: %w", TableSysUser, err)
 		}
 
 		// 创建岗位表
 		if err := createSysPostCollection(txApp); err != nil {
-			return fmt.Errorf("sys_post creation error: %w", err)
+			return fmt.Errorf("%s creation error: %w", TableSysPost, err)
 		}
 
 		// 创建角色表
 		if err := createSysRoleCollection(txApp); err != nil {
-			return fmt.Errorf("sys_role creation error: %w", err)
+			return fmt.Errorf("%s creation error: %w", TableSysRole, err)
 		}
 
 		// 创建菜单表
 		if err := createSysMenuCollection(txApp); err != nil {
-			return fmt.Errorf("sys_menu creation error: %w", err)
+			return fmt.Errorf("%s creation error: %w", TableSysMenu, err)
 		}
 
 		// 创建操作日志表
 		if err := createSysOperLogCollection(txApp); err != nil {
-			return fmt.Errorf("sys_oper_log creation error: %w", err)
+			return fmt.Errorf("%s creation error: %w", TableSysOperLog, err)
+		}
+
+		// 创建字典类型表
+		if err := createSysDictTypeCollection(txApp); err != nil {
+			return fmt.Errorf("%s creation error: %w", TableSysDictType, err)
+		}
+
+		// 创建字典数据表
+		if err := createSysDictDataCollection(txApp); err != nil {
+			return fmt.Errorf("%s creation error: %w", TableSysDictData, err)
+		}
+
+		// 创建参数配置表
+		if err := createSysConfigCollection(txApp); err != nil {
+			return fmt.Errorf("%s creation error: %w", TableSysConfig, err)
+		}
+
+		// 创建系统访问记录表
+		if err := createSysLogininforCollection(txApp); err != nil {
+			return fmt.Errorf("%s creation error: %w", TableSysLogininfor, err)
+		}
+
+		// 创建在线用户记录表
+		if err := createSysUserOnlineCollection(txApp); err != nil {
+			return fmt.Errorf("%s creation error: %w", TableSysUserOnline, err)
 		}
 
 		// 添加关联字段（在所有表创建完成后）
@@ -53,16 +97,21 @@ func init() {
 	}, func(txApp core.App) error {
 		// 回滚时删除所有创建的表
 		tables := []string{
-			"sys_oper_log",
-			"sys_user_post",
-			"sys_role_dept",
-			"sys_role_menu",
-			"sys_user_role",
-			"sys_user",
-			"sys_menu",
-			"sys_role",
-			"sys_post",
-			"sys_dept",
+			TableSysUserOnline,
+			TableSysLogininfor,
+			TableSysConfig,
+			TableSysDictData,
+			TableSysDictType,
+			TableSysOperLog,
+			TableSysUserPost,
+			TableSysRoleDept,
+			TableSysRoleMenu,
+			TableSysUserRole,
+			TableSysUser,
+			TableSysMenu,
+			TableSysRole,
+			TableSysPost,
+			TableSysDept,
 		}
 
 		for _, name := range tables {
@@ -80,15 +129,10 @@ func init() {
 
 // 创建部门表
 func createSysDeptCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_dept")
+	col := core.NewBaseCollection(TableSysDept)
 	col.System = false
 
-	// 添加字段
-	col.Fields.Add(&core.NumberField{
-		Name:     "parent_id",
-		Required: false,
-		Min:      types.Pointer(0.0),
-	})
+	// 添加字段（parent_id将在addRelationFields中添加）
 	col.Fields.Add(&core.TextField{
 		Name:     "ancestors",
 		Required: false,
@@ -153,6 +197,306 @@ func createSysDeptCollection(txApp core.App) error {
 	return txApp.Save(col)
 }
 
+// 创建字典类型表
+func createSysDictTypeCollection(txApp core.App) error {
+	col := core.NewBaseCollection(TableSysDictType)
+	col.System = false
+
+	col.Fields.Add(&core.TextField{
+		Name:     "name",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "type",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.SelectField{
+		Name:     "status",
+		Required: false,
+		MaxSelect: 1,
+		Values: []string{"0", "1"},
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "create_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "create_time",
+		Required: false,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "update_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "update_time",
+		Required: false,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      500,
+	})
+
+	return txApp.Save(col)
+}
+
+// 创建字典数据表
+func createSysDictDataCollection(txApp core.App) error {
+	col := core.NewBaseCollection(TableSysDictData)
+	col.System = false
+
+	col.Fields.Add(&core.NumberField{
+		Name:     "code",
+		Required: false,
+		Min:      types.Pointer(0.0),
+	})
+	col.Fields.Add(&core.NumberField{
+		Name:     "order_num",
+		Required: false,
+		Min:      types.Pointer(0.0),
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "label",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "value",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "type",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "css_class",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "list_class",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.SelectField{
+		Name:     "is_default",
+		Required: false,
+		MaxSelect: 1,
+		Values: []string{"Y", "N"},
+	})
+	col.Fields.Add(&core.SelectField{
+		Name:     "status",
+		Required: false,
+		MaxSelect: 1,
+		Values: []string{"0", "1"},
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "create_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "create_time",
+		Required: false,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "update_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "update_time",
+		Required: false,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      500,
+	})
+
+	return txApp.Save(col)
+}
+
+// 创建参数配置表
+func createSysConfigCollection(txApp core.App) error {
+	col := core.NewBaseCollection(TableSysConfig)
+	col.System = false
+
+	col.Fields.Add(&core.TextField{
+		Name:     "name",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "key",
+		Required: false,
+		Max:      100,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "value",
+		Required: false,
+		Max:      500,
+	})
+	col.Fields.Add(&core.SelectField{
+		Name:     "type",
+		Required: false,
+		MaxSelect: 1,
+		Values: []string{"Y", "N"},
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "create_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "create_time",
+		Required: false,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "update_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "update_time",
+		Required: false,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      500,
+	})
+
+	return txApp.Save(col)
+}
+
+// 创建系统访问记录表
+func createSysLogininforCollection(txApp core.App) error {
+	col := core.NewBaseCollection(TableSysLogininfor)
+	col.System = false
+
+	col.Fields.Add(&core.TextField{
+		Name:     "name",
+		Required: false,
+		Max:      50,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "ipaddr",
+		Required: false,
+		Max:      128,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "location",
+		Required: false,
+		Max:      255,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "browser",
+		Required: false,
+		Max:      50,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "os",
+		Required: false,
+		Max:      50,
+	})
+	col.Fields.Add(&core.SelectField{
+		Name:     "status",
+		Required: false,
+		MaxSelect: 1,
+		Values: []string{"0", "1"},
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "msg",
+		Required: false,
+		Max:      255,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "create_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "create_time",
+		Required: false,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "update_by",
+		Required: false,
+		Max:      64,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "update_time",
+		Required: false,
+	})
+
+	return txApp.Save(col)
+}
+
+// 创建在线用户记录表
+func createSysUserOnlineCollection(txApp core.App) error {
+	col := core.NewBaseCollection(TableSysUserOnline)
+	col.System = false
+
+	col.Fields.Add(&core.TextField{
+		Name:     "username",
+		Required: false,
+		Max:      50,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "dept_name",
+		Required: false,
+		Max:      50,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "ipaddr",
+		Required: false,
+		Max:      128,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "location",
+		Required: false,
+		Max:      255,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "browser",
+		Required: false,
+		Max:      50,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "os",
+		Required: false,
+		Max:      50,
+	})
+	col.Fields.Add(&core.TextField{
+		Name:     "status",
+		Required: false,
+		Max:      10,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "start_timestamp",
+		Required: false,
+	})
+	col.Fields.Add(&core.DateField{
+		Name:     "last_access_time",
+		Required: false,
+	})
+	col.Fields.Add(&core.NumberField{
+		Name:     "expire_time",
+		Required: false,
+		Min:      types.Pointer(0.0),
+	})
+
+	return txApp.Save(col)
+}
+
 // 删除users表
 func deleteUsersTable(txApp core.App) error {
 	return nil
@@ -174,15 +518,15 @@ func deleteUsersTable(txApp core.App) error {
 // addRelationFields 在所有表创建完成后添加关联字段和创建关联表
 func addRelationFields(txApp core.App) error {
 	// 为sys_user表添加dept_id关联字段
-	sysUserCol, err := txApp.FindCollectionByNameOrId("sys_user")
+	sysUserCol, err := txApp.FindCollectionByNameOrId(TableSysUser)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_user collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysUser, err)
 	}
 
 	// 获取sys_dept集合的实际ID
-	sysDeptCol, err := txApp.FindCollectionByNameOrId("sys_dept")
+	sysDeptCol, err := txApp.FindCollectionByNameOrId(TableSysDept)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_dept collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysDept, err)
 	}
 
 	// 添加部门ID关联字段
@@ -194,24 +538,77 @@ func addRelationFields(txApp core.App) error {
 	})
 
 	if err := txApp.Save(sysUserCol); err != nil {
-		return fmt.Errorf("failed to update sys_user collection: %w", err)
+		return fmt.Errorf("failed to update %s collection: %w", TableSysUser, err)
+	}
+
+	// 为部门表添加parent_id自引用关联字段
+	sysDeptCol.Fields.Add(&core.RelationField{
+		Name:         "parent_id",
+		Required:     false,
+		CollectionId: sysDeptCol.Id, // 自引用
+		MaxSelect:    1,
+	})
+
+	if err := txApp.Save(sysDeptCol); err != nil {
+		return fmt.Errorf("failed to update %s collection: %w", TableSysDept, err)
+	}
+
+	// 获取菜单表集合
+	sysMenuCol, err := txApp.FindCollectionByNameOrId(TableSysMenu)
+	if err != nil {
+		return fmt.Errorf("failed to find %s collection: %w", TableSysMenu, err)
+	}
+
+	// 为菜单表添加parent_id自引用关联字段
+	sysMenuCol.Fields.Add(&core.RelationField{
+		Name:         "parent_id",
+		Required:     false,
+		CollectionId: sysMenuCol.Id, // 自引用
+		MaxSelect:    1,
+	})
+
+	if err := txApp.Save(sysMenuCol); err != nil {
+		return fmt.Errorf("failed to update %s collection: %w", TableSysMenu, err)
+	}
+
+	// 为字典数据表添加字典类型关联字段
+	sysDictDataCol, err := txApp.FindCollectionByNameOrId(TableSysDictData)
+	if err != nil {
+		return fmt.Errorf("failed to find %s collection: %w", TableSysDictData, err)
+	}
+
+	sysDictTypeCol, err := txApp.FindCollectionByNameOrId(TableSysDictType)
+	if err != nil {
+		return fmt.Errorf("failed to find %s collection: %w", TableSysDictType, err)
+	}
+
+	// 添加字典类型关联字段
+	sysDictDataCol.Fields.Add(&core.RelationField{
+		Name:         "dict_type_id",
+		Required:     false,
+		CollectionId: sysDictTypeCol.Id,
+		MaxSelect:    1,
+	})
+
+	if err := txApp.Save(sysDictDataCol); err != nil {
+		return fmt.Errorf("failed to update %s collection: %w", TableSysDictData, err)
 	}
 
 	// 创建关联表
 	if err := createSysUserRoleCollection(txApp); err != nil {
-		return fmt.Errorf("sys_user_role creation error: %w", err)
+		return fmt.Errorf("%s creation error: %w", TableSysUserRole, err)
 	}
 
 	if err := createSysRoleMenuCollection(txApp); err != nil {
-		return fmt.Errorf("sys_role_menu creation error: %w", err)
+		return fmt.Errorf("%s creation error: %w", TableSysRoleMenu, err)
 	}
 
 	if err := createSysRoleDeptCollection(txApp); err != nil {
-		return fmt.Errorf("sys_role_dept creation error: %w", err)
+		return fmt.Errorf("%s creation error: %w", TableSysRoleDept, err)
 	}
 
 	if err := createSysUserPostCollection(txApp); err != nil {
-		return fmt.Errorf("sys_user_post creation error: %w", err)
+		return fmt.Errorf("%s creation error: %w", TableSysUserPost, err)
 	}
 
 	return nil
@@ -219,9 +616,9 @@ func addRelationFields(txApp core.App) error {
 
 // 创建用户表
 func createSysUserCollection(txApp core.App) error {
-	col := core.NewAuthCollection("sys_user", "_pb_sys_users_auth_")
+	col := core.NewAuthCollection(TableSysUser, "_pb_sys_users_auth_")
 	col.Type = core.CollectionTypeAuth
-	col.Name = "sys_user"
+	col.Name = TableSysUser
 	col.System = false
 
 	// 登录账号
@@ -335,7 +732,7 @@ func createSysUserCollection(txApp core.App) error {
 
 // 创建岗位表
 func createSysPostCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_post")
+	col := core.NewBaseCollection(TableSysPost)
 	col.System = false
 
 	col.Fields.Add(&core.TextField{
@@ -389,7 +786,7 @@ func createSysPostCollection(txApp core.App) error {
 
 // 创建角色表
 func createSysRoleCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_role")
+	col := core.NewBaseCollection(TableSysRole)
 	col.System = false
 
 	col.Fields.Add(&core.TextField{
@@ -455,7 +852,7 @@ func createSysRoleCollection(txApp core.App) error {
 
 // 创建菜单表
 func createSysMenuCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_menu")
+	col := core.NewBaseCollection(TableSysMenu)
 	col.System = false
 
 	col.Fields.Add(&core.TextField{
@@ -463,11 +860,7 @@ func createSysMenuCollection(txApp core.App) error {
 		Required: true,
 		Max:      50,
 	})
-	col.Fields.Add(&core.NumberField{
-		Name:     "parent_id",
-		Required: false,
-		Min:      types.Pointer(0.0),
-	})
+	// parent_id字段将在addRelationFields中添加
 	col.Fields.Add(&core.NumberField{
 		Name:     "order_num",
 		Required: false,
@@ -541,17 +934,17 @@ func createSysMenuCollection(txApp core.App) error {
 
 // 创建用户角色关联表
 func createSysUserRoleCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_user_role")
+	col := core.NewBaseCollection(TableSysUserRole)
 	col.System = false
 
 	// 获取关联集合的实际ID
-	sysUserCol, err := txApp.FindCollectionByNameOrId("sys_user")
+	sysUserCol, err := txApp.FindCollectionByNameOrId(TableSysUser)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_user collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysUser, err)
 	}
-	sysRoleCol, err := txApp.FindCollectionByNameOrId("sys_role")
+	sysRoleCol, err := txApp.FindCollectionByNameOrId(TableSysRole)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_role collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysRole, err)
 	}
 
 	col.Fields.Add(&core.RelationField{
@@ -572,17 +965,17 @@ func createSysUserRoleCollection(txApp core.App) error {
 
 // 创建角色菜单关联表
 func createSysRoleMenuCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_role_menu")
+	col := core.NewBaseCollection(TableSysRoleMenu)
 	col.System = false
 
 	// 获取关联集合的实际ID
-	sysRoleCol, err := txApp.FindCollectionByNameOrId("sys_role")
+	sysRoleCol, err := txApp.FindCollectionByNameOrId(TableSysRole)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_role collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysRole, err)
 	}
-	sysMenuCol, err := txApp.FindCollectionByNameOrId("sys_menu")
+	sysMenuCol, err := txApp.FindCollectionByNameOrId(TableSysMenu)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_menu collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysMenu, err)
 	}
 
 	col.Fields.Add(&core.RelationField{
@@ -603,17 +996,17 @@ func createSysRoleMenuCollection(txApp core.App) error {
 
 // 创建角色部门关联表
 func createSysRoleDeptCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_role_dept")
+	col := core.NewBaseCollection(TableSysRoleDept)
 	col.System = false
 
 	// 获取关联集合的实际ID
-	sysRoleCol, err := txApp.FindCollectionByNameOrId("sys_role")
+	sysRoleCol, err := txApp.FindCollectionByNameOrId(TableSysRole)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_role collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysRole, err)
 	}
-	sysDeptCol, err := txApp.FindCollectionByNameOrId("sys_dept")
+	sysDeptCol, err := txApp.FindCollectionByNameOrId(TableSysDept)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_dept collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysDept, err)
 	}
 
 	col.Fields.Add(&core.RelationField{
@@ -634,17 +1027,17 @@ func createSysRoleDeptCollection(txApp core.App) error {
 
 // 创建用户岗位关联表
 func createSysUserPostCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_user_post")
+	col := core.NewBaseCollection(TableSysUserPost)
 	col.System = false
 
 	// 获取关联集合的实际ID
-	sysUserCol, err := txApp.FindCollectionByNameOrId("sys_user")
+	sysUserCol, err := txApp.FindCollectionByNameOrId(TableSysUser)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_user collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysUser, err)
 	}
-	sysPostCol, err := txApp.FindCollectionByNameOrId("sys_post")
+	sysPostCol, err := txApp.FindCollectionByNameOrId(TableSysPost)
 	if err != nil {
-		return fmt.Errorf("failed to find sys_post collection: %w", err)
+		return fmt.Errorf("failed to find %s collection: %w", TableSysPost, err)
 	}
 
 	col.Fields.Add(&core.RelationField{
@@ -665,7 +1058,7 @@ func createSysUserPostCollection(txApp core.App) error {
 
 // 创建操作日志表
 func createSysOperLogCollection(txApp core.App) error {
-	col := core.NewBaseCollection("sys_oper_log")
+	col := core.NewBaseCollection(TableSysOperLog)
 	col.System = false
 
 	col.Fields.Add(&core.TextField{
