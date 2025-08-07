@@ -2,101 +2,166 @@ package migrations
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/pocketbase/pocketbase/core"
 )
 
 func init() {
 	core.AppMigrations.Register(func(txApp core.App) error {
-		// 为sys_user表添加默认的admin用户
-		if err := addDefaultAdminUser(txApp); err != nil {
-			return fmt.Errorf("添加默认admin用户失败: %w", err)
+		// 初始化字典类型数据
+		if err := initDictTypeData(txApp); err != nil {
+			return fmt.Errorf("初始化字典类型数据失败: %w", err)
+		}
+
+		// 初始化字典数据
+		if err := initDictData(txApp); err != nil {
+			return fmt.Errorf("初始化字典数据失败: %w", err)
+		}
+
+		// 初始化系统用户数据
+		if err := initSysUserData(txApp); err != nil {
+			return fmt.Errorf("初始化系统用户数据失败: %w", err)
 		}
 
 		return nil
 	}, func(txApp core.App) error {
-		// 回滚操作：删除默认的admin用户
-		if err := removeDefaultAdminUser(txApp); err != nil {
-			return fmt.Errorf("删除默认admin用户失败: %w", err)
+		// 回滚操作：删除系统用户数据
+		if err := removeSysUserData(txApp); err != nil {
+			return fmt.Errorf("删除系统用户数据失败: %w", err)
+		}
+
+		// 回滚操作：删除字典数据
+		if err := removeDictData(txApp); err != nil {
+			return fmt.Errorf("删除字典数据失败: %w", err)
+		}
+
+		// 回滚操作：删除字典类型数据
+		if err := removeDictTypeData(txApp); err != nil {
+			return fmt.Errorf("删除字典类型数据失败: %w", err)
 		}
 
 		return nil
 	})
 }
 
-// addDefaultAdminUser 添加默认的admin用户
-func addDefaultAdminUser(txApp core.App) error {
-	// 获取sys_user集合
-	collection, err := txApp.FindCollectionByNameOrId("sys_user")
-	if err != nil {
-		return fmt.Errorf("找不到sys_user集合: %w", err)
+// initSysUserData 初始化系统用户数据
+func initSysUserData(txApp core.App) error {
+	// 使用通用数据导入函数
+	request := DataImportRequest{
+		Table:        TableSysUser,
+		UniqueFields: []string{"username"},
+		Data: []map[string]interface{}{
+			{
+				"username":    "admin",
+				"email":       "admin@example.com",
+				"password":    "123!@#qwe",
+				"type":        "00",
+				"status":      "0",
+				"delete_flag": "0",
+				"created_by":  "system",
+				"updated_by":  "system",
+				"remark":      "系统默认管理员账号",
+				"verified":    true,
+			},
+		},
 	}
 
-	// 检查是否已存在admin用户
-	existingRecord, _ := txApp.FindFirstRecordByFilter("sys_user", "username = 'admin'")
-	if existingRecord != nil {
-		// 如果已存在admin用户，跳过创建
-		return nil
-	}
-
-	// 创建新的用户记录
-	record := core.NewRecord(collection)
-
-	// 设置用户名
-	record.Set("username", "admin")
-
-	// 设置邮箱（PocketBase auth collection需要email字段）
-	record.SetEmail("admin@example.com")
-
-	// 设置密码（使用PocketBase的SetPassword方法）
-	record.SetPassword("123!@#qwe")
-
-	// 设置邮箱验证状态
-	record.SetVerified(true)
-
-	// 设置用户类型为管理员
-	record.Set("type", "00")
-
-	// 设置账号状态为正常
-	record.Set("status", "0")
-
-	// 设置删除标志为未删除
-	record.Set("delete_flag", "0")
-
-	// 设置创建时间
-	now := time.Now()
-	record.Set("created", now)
-	record.Set("updated", now)
-
-	// 设置创建者
-	record.Set("created_by", "system")
-	record.Set("updated_by", "system")
-
-	// 设置备注
-	record.Set("remark", "系统默认管理员账号")
-
-	// 保存记录
-	if err := txApp.Save(record); err != nil {
-		return fmt.Errorf("保存admin用户失败: %w", err)
-	}
-
-	return nil
+	// 使用结构体中的UniqueFields进行数据导入
+	return ImportDataFromStructWithUniqueFields(txApp, request)
 }
 
-// removeDefaultAdminUser 删除默认的admin用户（回滚操作）
-func removeDefaultAdminUser(txApp core.App) error {
-	// 查找admin用户
-	record, err := txApp.FindFirstRecordByFilter("sys_user", "username = 'admin'")
-	if err != nil {
-		// 如果找不到记录，可能已经被删除，不需要报错
-		return nil
+// removeDictData 删除字典数据（回滚操作）
+func removeDictData(txApp core.App) error {
+	// 使用通用删除函数删除所有字典数据
+	return DeleteDataByFilter(txApp, TableSysDictData, "id != ''")
+}
+
+// removeDictTypeData 删除字典类型数据（回滚操作）
+func removeDictTypeData(txApp core.App) error {
+	// 使用通用删除函数删除所有字典类型数据
+	return DeleteDataByFilter(txApp, TableSysDictType, "id != ''")
+}
+
+// initDictTypeData 初始化字典类型数据
+func initDictTypeData(txApp core.App) error {
+	// 使用通用数据导入函数
+	request := DataImportRequest{
+		Table:        TableSysDictType,
+		UniqueFields: []string{"id"},
+		Data: []map[string]interface{}{
+			{"id": "upbepvx05k6j1pb", "name": "用户性别", "remark": "用户性别列表", "status": "0", "type": "sys_user_sex"},
+			{"id": "9ew4nxq6202v35w", "name": "菜单状态", "remark": "菜单状态列表", "status": "0", "type": "sys_show_hide"},
+			{"id": "htxvbu2rnoreyqw", "name": "系统开关", "remark": "系统开关列表", "status": "0", "type": "sys_normal_disable"},
+			{"id": "pb3yap6wr35rxk2", "name": "任务状态", "remark": "任务状态列表", "status": "0", "type": "sys_job_status"},
+			{"id": "u3kcjk8gjeirzuv", "name": "任务分组", "remark": "任务分组列表", "status": "0", "type": "sys_job_group"},
+			{"id": "hz5ybddleja7g7g", "name": "系统是否", "remark": "系统是否列表", "status": "0", "type": "sys_yes_no"},
+			{"id": "efusb55rhbyn8c1", "name": "通知类型", "remark": "通知类型列表", "status": "0", "type": "sys_notice_type"},
+			{"id": "w91tyto4wvuh22g", "name": "通知状态", "remark": "通知状态列表", "status": "0", "type": "sys_notice_status"},
+			{"id": "y6rxzctulm0vdju", "name": "操作类型", "remark": "操作类型列表", "status": "0", "type": "sys_oper_type"},
+			{"id": "15xzpv4hl3sitzg", "name": "系统状态", "remark": "登录状态列表", "status": "0", "type": "sys_common_status"},
+		},
 	}
 
-	// 删除记录
-	if err := txApp.Delete(record); err != nil {
-		return fmt.Errorf("删除admin用户失败: %w", err)
+	// 使用结构体中的UniqueFields进行数据导入
+	return ImportDataFromStructWithUniqueFields(txApp, request)
+}
+
+// initDictData 初始化字典数据
+func initDictData(txApp core.App) error {
+	// 使用通用数据导入函数
+	request := DataImportRequest{
+		Table:        TableSysDictData,
+		UniqueFields: []string{"type", "value"},
+		Data: []map[string]interface{}{
+			// 用户性别
+			{"order_num": 1, "label": "男", "value": "0", "type": "sys_user_sex", "css_class": "", "list_class": "", "is_default": "Y", "status": "0", "create_by": "system", "remark": "性别男"},
+			{"order_num": 2, "label": "女", "value": "1", "type": "sys_user_sex", "css_class": "", "list_class": "", "is_default": "N", "status": "0", "create_by": "system", "remark": "性别女"},
+			{"order_num": 3, "label": "未知", "value": "2", "type": "sys_user_sex", "css_class": "", "list_class": "", "is_default": "N", "status": "0", "create_by": "system", "remark": "性别未知"},
+			// 菜单状态
+			{"order_num": 1, "label": "显示", "value": "0", "type": "sys_show_hide", "css_class": "", "list_class": "primary", "is_default": "Y", "status": "0", "create_by": "system", "remark": "显示菜单"},
+			{"order_num": 2, "label": "隐藏", "value": "1", "type": "sys_show_hide", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "隐藏菜单"},
+			// 系统开关
+			{"order_num": 1, "label": "正常", "value": "0", "type": "sys_normal_disable", "css_class": "", "list_class": "primary", "is_default": "Y", "status": "0", "create_by": "system", "remark": "正常状态"},
+			{"order_num": 2, "label": "停用", "value": "1", "type": "sys_normal_disable", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "停用状态"},
+			// 任务状态
+			{"order_num": 1, "label": "正常", "value": "0", "type": "sys_job_status", "css_class": "", "list_class": "primary", "is_default": "Y", "status": "0", "create_by": "system", "remark": "正常状态"},
+			{"order_num": 2, "label": "暂停", "value": "1", "type": "sys_job_status", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "停用状态"},
+			// 任务分组
+			{"order_num": 1, "label": "默认", "value": "DEFAULT", "type": "sys_job_group", "css_class": "", "list_class": "", "is_default": "Y", "status": "0", "create_by": "system", "remark": "默认分组"},
+			{"order_num": 2, "label": "系统", "value": "SYSTEM", "type": "sys_job_group", "css_class": "", "list_class": "", "is_default": "N", "status": "0", "create_by": "system", "remark": "系统分组"},
+			// 系统是否
+			{"order_num": 1, "label": "是", "value": "Y", "type": "sys_yes_no", "css_class": "", "list_class": "primary", "is_default": "Y", "status": "0", "create_by": "system", "remark": "系统默认是"},
+			{"order_num": 2, "label": "否", "value": "N", "type": "sys_yes_no", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "系统默认否"},
+			// 通知类型
+			{"order_num": 1, "label": "通知", "value": "1", "type": "sys_notice_type", "css_class": "", "list_class": "warning", "is_default": "Y", "status": "0", "create_by": "system", "remark": "通知"},
+			{"order_num": 2, "label": "公告", "value": "2", "type": "sys_notice_type", "css_class": "", "list_class": "success", "is_default": "N", "status": "0", "create_by": "system", "remark": "公告"},
+			// 通知状态
+			{"order_num": 1, "label": "正常", "value": "0", "type": "sys_notice_status", "css_class": "", "list_class": "primary", "is_default": "Y", "status": "0", "create_by": "system", "remark": "正常状态"},
+			{"order_num": 2, "label": "关闭", "value": "1", "type": "sys_notice_status", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "关闭状态"},
+			// 操作类型
+			{"order_num": 99, "label": "其他", "value": "0", "type": "sys_oper_type", "css_class": "", "list_class": "info", "is_default": "N", "status": "0", "create_by": "system", "remark": "其他操作"},
+			{"order_num": 1, "label": "新增", "value": "1", "type": "sys_oper_type", "css_class": "", "list_class": "info", "is_default": "N", "status": "0", "create_by": "system", "remark": "新增操作"},
+			{"order_num": 2, "label": "修改", "value": "2", "type": "sys_oper_type", "css_class": "", "list_class": "info", "is_default": "N", "status": "0", "create_by": "system", "remark": "修改操作"},
+			{"order_num": 3, "label": "删除", "value": "3", "type": "sys_oper_type", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "删除操作"},
+			{"order_num": 4, "label": "授权", "value": "4", "type": "sys_oper_type", "css_class": "", "list_class": "primary", "is_default": "N", "status": "0", "create_by": "system", "remark": "授权操作"},
+			{"order_num": 5, "label": "导出", "value": "5", "type": "sys_oper_type", "css_class": "", "list_class": "warning", "is_default": "N", "status": "0", "create_by": "system", "remark": "导出操作"},
+			{"order_num": 6, "label": "导入", "value": "6", "type": "sys_oper_type", "css_class": "", "list_class": "warning", "is_default": "N", "status": "0", "create_by": "system", "remark": "导入操作"},
+			{"order_num": 7, "label": "强退", "value": "7", "type": "sys_oper_type", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "强退操作"},
+			{"order_num": 8, "label": "生成代码", "value": "8", "type": "sys_oper_type", "css_class": "", "list_class": "warning", "is_default": "N", "status": "0", "create_by": "system", "remark": "生成操作"},
+			{"order_num": 9, "label": "清空数据", "value": "9", "type": "sys_oper_type", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "清空操作"},
+			// 系统状态
+			{"order_num": 1, "label": "成功", "value": "0", "type": "sys_common_status", "css_class": "", "list_class": "primary", "is_default": "N", "status": "0", "create_by": "system", "remark": "正常状态"},
+			{"order_num": 2, "label": "失败", "value": "1", "type": "sys_common_status", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "停用状态"},
+		},
 	}
 
-	return nil
+	// 使用结构体中的UniqueFields进行数据导入
+	// UniqueFields设置为["type", "value"]，确保type+value的组合唯一性
+	return ImportDataFromStructWithUniqueFields(txApp, request)
+}
+
+// removeSysUserData 删除系统用户数据（回滚操作）
+func removeSysUserData(txApp core.App) error {
+	// 使用通用删除函数删除所有系统用户数据
+	return DeleteDataByFilter(txApp, TableSysUser, "created_by = 'system'")
 }
