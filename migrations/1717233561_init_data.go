@@ -6,86 +6,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func init() {
-	core.AppMigrations.Register(func(txApp core.App) error {
-		// 初始化字典类型数据
-		if err := initDictTypeData(txApp); err != nil {
-			return fmt.Errorf("初始化字典类型数据失败: %w", err)
-		}
-
-		// 初始化字典数据
-		if err := initDictData(txApp); err != nil {
-			return fmt.Errorf("初始化字典数据失败: %w", err)
-		}
-
-		// 初始化系统用户数据
-		if err := initSysUserData(txApp); err != nil {
-			return fmt.Errorf("初始化系统用户数据失败: %w", err)
-		}
-
-		return nil
-	}, func(txApp core.App) error {
-		// 回滚操作：删除系统用户数据
-		if err := removeSysUserData(txApp); err != nil {
-			return fmt.Errorf("删除系统用户数据失败: %w", err)
-		}
-
-		// 回滚操作：删除字典数据
-		if err := removeDictData(txApp); err != nil {
-			return fmt.Errorf("删除字典数据失败: %w", err)
-		}
-
-		// 回滚操作：删除字典类型数据
-		if err := removeDictTypeData(txApp); err != nil {
-			return fmt.Errorf("删除字典类型数据失败: %w", err)
-		}
-
-		return nil
-	})
-}
-
-// initSysUserData 初始化系统用户数据
-func initSysUserData(txApp core.App) error {
-	// 使用通用数据导入函数
-	request := DataImportRequest{
-		Table:        TableSysUser,
-		UniqueFields: []string{"username"},
-		Data: []map[string]interface{}{
-			{
-				"username":    "admin",
-				"email":       "admin@example.com",
-				"password":    "123!@#qwe",
-				"type":        "00",
-				"status":      "0",
-				"delete_flag": "0",
-				"created_by":  "system",
-				"updated_by":  "system",
-				"remark":      "系统默认管理员账号",
-				"verified":    true,
-			},
-		},
-	}
-
-	// 使用结构体中的UniqueFields进行数据导入
-	return ImportDataFromStructWithUniqueFields(txApp, request)
-}
-
-// removeDictData 删除字典数据（回滚操作）
-func removeDictData(txApp core.App) error {
-	// 使用通用删除函数删除所有字典数据
-	return DeleteDataByFilter(txApp, TableSysDictData, "id != ''")
-}
-
-// removeDictTypeData 删除字典类型数据（回滚操作）
-func removeDictTypeData(txApp core.App) error {
-	// 使用通用删除函数删除所有字典类型数据
-	return DeleteDataByFilter(txApp, TableSysDictType, "id != ''")
-}
-
-// initDictTypeData 初始化字典类型数据
-func initDictTypeData(txApp core.App) error {
-	// 使用通用数据导入函数
-	request := DataImportRequest{
+// 定义初始化数据配置
+var initDataRequests = []DataImportRequest{
+	// 字典类型数据
+	{
 		Table:        TableSysDictType,
 		UniqueFields: []string{"id"},
 		Data: []map[string]interface{}{
@@ -100,16 +24,9 @@ func initDictTypeData(txApp core.App) error {
 			{"id": "y6rxzctulm0vdju", "name": "操作类型", "remark": "操作类型列表", "status": "0", "type": "sys_oper_type"},
 			{"id": "15xzpv4hl3sitzg", "name": "系统状态", "remark": "登录状态列表", "status": "0", "type": "sys_common_status"},
 		},
-	}
-
-	// 使用结构体中的UniqueFields进行数据导入
-	return ImportDataFromStructWithUniqueFields(txApp, request)
-}
-
-// initDictData 初始化字典数据
-func initDictData(txApp core.App) error {
-	// 使用通用数据导入函数
-	request := DataImportRequest{
+	},
+	// 字典数据
+	{
 		Table:        TableSysDictData,
 		UniqueFields: []string{"type", "value"},
 		Data: []map[string]interface{}{
@@ -153,15 +70,45 @@ func initDictData(txApp core.App) error {
 			{"order_num": 1, "label": "成功", "value": "0", "type": "sys_common_status", "css_class": "", "list_class": "primary", "is_default": "N", "status": "0", "create_by": "system", "remark": "正常状态"},
 			{"order_num": 2, "label": "失败", "value": "1", "type": "sys_common_status", "css_class": "", "list_class": "danger", "is_default": "N", "status": "0", "create_by": "system", "remark": "停用状态"},
 		},
-	}
-
-	// 使用结构体中的UniqueFields进行数据导入
-	// UniqueFields设置为["type", "value"]，确保type+value的组合唯一性
-	return ImportDataFromStructWithUniqueFields(txApp, request)
+	},
+	// 系统用户数据
+	{
+		Table:        TableSysUser,
+		UniqueFields: []string{"username"},
+		Data: []map[string]interface{}{
+			{
+				"username":    "admin",
+				"email":       "admin@example.com",
+				"password":    "123!@#qwe",
+				"type":        "00",
+				"status":      "0",
+				"delete_flag": "0",
+				"created_by":  "system",
+				"updated_by":  "system",
+				"remark":      "系统默认管理员账号",
+				"verified":    true,
+			},
+		},
+	},
 }
 
-// removeSysUserData 删除系统用户数据（回滚操作）
-func removeSysUserData(txApp core.App) error {
-	// 使用通用删除函数删除所有系统用户数据
-	return DeleteDataByFilter(txApp, TableSysUser, "created_by = 'system'")
+func init() {
+	core.AppMigrations.Register(func(txApp core.App) error {
+		// 循环执行数据初始化
+		for i, request := range initDataRequests {
+			if err := ImportData(txApp, request); err != nil {
+				return fmt.Errorf("初始化第 %d 组数据失败 (表: %s): %w", i+1, request.Table, err)
+			}
+		}
+		return nil
+	}, func(txApp core.App) error {
+		// 循环执行数据回滚（按相反顺序使用 RollbackData）
+		for i := len(initDataRequests) - 1; i >= 0; i-- {
+			request := initDataRequests[i]
+			if err := RollbackData(txApp, request); err != nil {
+				return fmt.Errorf("回滚第 %d 组数据失败 (表: %s): %w", i+1, request.Table, err)
+			}
+		}
+		return nil
+	})
 }
