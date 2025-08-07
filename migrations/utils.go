@@ -7,11 +7,323 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+// 表名常量定义
+const (
+	TableSysDept         = "sys_department"
+	TableSysUser         = "sys_user"
+	TableSysPost         = "sys_position"
+	TableSysRole         = "sys_role"
+	TableSysMenu         = "sys_menu"
+	TableSysOperationLog = "sys_operation_log"
+	TableSysDictType     = "sys_dict_type"
+	TableSysDictData     = "sys_dict_data"
+	TableSysConfig       = "sys_config"
+	TableSysLoginInfo    = "sys_login_info"
+	TableSysUserOnline   = "sys_user_online"
+	TableSysNotice       = "sys_notice"
+	TableSysUserRole     = "sys_user_role"
+	TableSysRoleMenu     = "sys_role_menu"
+	TableSysRoleDept     = "sys_role_department"
+	TableSysUserPost     = "sys_user_position"
+)
+
+// 定义关系字段映射
+type RelationFieldConfig struct {
+	TableName   string
+	FieldName   string
+	TargetTable string
+	Options     map[string]interface{}
+}
+
+// TableCreationRequest 表创建请求结构
+type TableCreationRequest struct {
+	TableName        string
+	IsAuthCollection bool
+	AuthOptions      *AuthCollectionOptions
+	Fields           core.FieldsList
+	Indexes          []string
+	Relations        []RelationFieldConfig
+}
+
+// AuthCollectionOptions 认证集合选项
+type AuthCollectionOptions struct {
+	TokenKey string
+}
+
 // DataImportRequest 数据导入请求结构
 type DataImportRequest struct {
 	Table        string                   `json:"table"`
 	Data         []map[string]interface{} `json:"data"`
 	UniqueFields []string                 `json:"uniqueFields"`
+}
+
+// CreateTable 创建表
+func CreateTable(txApp core.App, request TableCreationRequest) error {
+	// 关闭外键约束检查以支持自引用表
+	if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = OFF").Execute(); err != nil {
+		return fmt.Errorf("failed to disable foreign key constraints: %w", err)
+	}
+
+	// 确保在函数结束时重新开启外键约束检查
+	defer func() {
+		if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = ON").Execute(); err != nil {
+			// 记录错误但不影响主流程
+			fmt.Printf("Warning: failed to re-enable foreign key constraints: %v\n", err)
+		}
+	}()
+
+	collection := core.NewBaseCollection(request.TableName)
+
+	if request.IsAuthCollection {
+		authCollection := core.NewAuthCollection(request.TableName)
+		if request.AuthOptions != nil {
+			authCollection.AuthToken.Duration = 1209600 // 14 days
+		}
+		collection = authCollection
+	}
+
+	// 添加字段
+	for _, field := range request.Fields {
+		if field != nil {
+			collection.Fields.Add(field)
+		}
+	}
+
+	// 统一添加通用字段
+	collection.Fields.Add(&core.TextField{Name: "created_by", Max: 64})
+	collection.Fields.Add(&core.AutodateField{Name: "created", OnCreate: true})
+	collection.Fields.Add(&core.TextField{Name: "updated_by", Max: 64})
+	collection.Fields.Add(&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true})
+
+	// 保存集合
+	if err := txApp.Save(collection); err != nil {
+		return fmt.Errorf("failed to save collection: %w", err)
+	}
+
+	// 创建索引
+	for _, indexSQL := range request.Indexes {
+		formattedSQL := fmt.Sprintf(indexSQL, collection.Name, collection.Name)
+		if _, err := txApp.DB().NewQuery(formattedSQL).Execute(); err != nil {
+			return fmt.Errorf("failed to create index: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// AddRelationFields 为已存在的表添加关联字段
+func AddRelationFields(txApp core.App, tableName string, fields core.FieldsList) error {
+	collection, err := txApp.FindCollectionByNameOrId(tableName)
+	if err != nil {
+		return fmt.Errorf("failed to find collection %s: %w", tableName, err)
+	}
+
+	for _, field := range fields {
+		if field != nil {
+			collection.Fields.Add(field)
+		}
+	}
+
+	if err := txApp.Save(collection); err != nil {
+		return fmt.Errorf("failed to save collection with relation fields: %w", err)
+	}
+
+	return nil
+}
+
+// AddSingleRelationField 为指定表添加单个关联字段
+func AddSingleRelationField(app core.App, tableName, fieldName, targetTable string, options map[string]interface{}) error {
+	collection, err := app.FindCollectionByNameOrId(tableName)
+	if err != nil {
+		return err
+	}
+
+	// 获取目标集合
+	targetCollection, err := app.FindCollectionByNameOrId(targetTable)
+	if err != nil {
+		return err
+	}
+
+	// 创建关系字段
+	relationField := CreateRelationFieldHelper(fieldName, targetCollection.Id, options)
+
+	// 添加字段到集合
+	collection.Fields.Add(relationField)
+
+	return app.Save(collection)
+}
+
+// createField 创建字段
+// CreateFieldHelper 创建字段的辅助函数，用于简化字段创建过程
+func CreateFieldHelper(name, fieldType string, options map[string]interface{}) core.Field {
+	switch fieldType {
+	case core.FieldTypeText:
+		field := &core.TextField{Name: name}
+		if required, ok := options["required"].(bool); ok {
+			field.Required = required
+		}
+		if max, ok := options["max"].(int); ok {
+			field.Max = max
+		}
+		if system, ok := options["system"].(bool); ok {
+			field.System = system
+		}
+		if hidden, ok := options["hidden"].(bool); ok {
+			field.Hidden = hidden
+		}
+		return field
+
+	case core.FieldTypeEmail:
+		field := &core.EmailField{Name: name}
+		if required, ok := options["required"].(bool); ok {
+			field.Required = required
+		}
+		if system, ok := options["system"].(bool); ok {
+			field.System = system
+		}
+		if hidden, ok := options["hidden"].(bool); ok {
+			field.Hidden = hidden
+		}
+		return field
+
+	case core.FieldTypeNumber:
+		field := &core.NumberField{Name: name}
+		if required, ok := options["required"].(bool); ok {
+			field.Required = required
+		}
+		if min, ok := options["min"].(*float64); ok {
+			field.Min = min
+		}
+		if system, ok := options["system"].(bool); ok {
+			field.System = system
+		}
+		if hidden, ok := options["hidden"].(bool); ok {
+			field.Hidden = hidden
+		}
+		return field
+
+	case core.FieldTypeSelect:
+		field := &core.SelectField{Name: name}
+		if required, ok := options["required"].(bool); ok {
+			field.Required = required
+		}
+		if maxSelect, ok := options["maxSelect"].(int); ok && maxSelect > 0 {
+			field.MaxSelect = maxSelect
+		} else {
+			field.MaxSelect = 1
+		}
+		if values, ok := options["values"].([]string); ok {
+			field.Values = values
+		}
+		if system, ok := options["system"].(bool); ok {
+			field.System = system
+		}
+		if hidden, ok := options["hidden"].(bool); ok {
+			field.Hidden = hidden
+		}
+		return field
+
+	case core.FieldTypeAutodate:
+		field := &core.AutodateField{Name: name}
+		if onCreate, ok := options["onCreate"].(bool); ok {
+			field.OnCreate = onCreate
+		}
+		if onUpdate, ok := options["onUpdate"].(bool); ok {
+			field.OnUpdate = onUpdate
+		}
+		if system, ok := options["system"].(bool); ok {
+			field.System = system
+		}
+		if hidden, ok := options["hidden"].(bool); ok {
+			field.Hidden = hidden
+		}
+		return field
+
+	case core.FieldTypeDate:
+		field := &core.DateField{Name: name}
+		if required, ok := options["required"].(bool); ok {
+			field.Required = required
+		}
+		if system, ok := options["system"].(bool); ok {
+			field.System = system
+		}
+		if hidden, ok := options["hidden"].(bool); ok {
+			field.Hidden = hidden
+		}
+		return field
+
+	case core.FieldTypeEditor:
+		field := &core.EditorField{Name: name}
+		if required, ok := options["required"].(bool); ok {
+			field.Required = required
+		}
+		if system, ok := options["system"].(bool); ok {
+			field.System = system
+		}
+		if hidden, ok := options["hidden"].(bool); ok {
+			field.Hidden = hidden
+		}
+		return field
+
+	case core.FieldTypeRelation:
+		field := &core.RelationField{Name: name}
+		if required, ok := options["required"].(bool); ok {
+			field.Required = required
+		}
+		if maxSelect, ok := options["maxSelect"].(int); ok && maxSelect > 0 {
+			field.MaxSelect = maxSelect
+		} else {
+			field.MaxSelect = 1
+		}
+		if system, ok := options["system"].(bool); ok {
+			field.System = system
+		}
+		if hidden, ok := options["hidden"].(bool); ok {
+			field.Hidden = hidden
+		}
+		return field
+
+	default:
+		return nil
+	}
+}
+
+// CreateRelationFieldHelper 创建关系字段的辅助函数
+func CreateRelationFieldHelper(name, collectionId string, options map[string]interface{}) core.Field {
+	field := &core.RelationField{
+		Name:         name,
+		CollectionId: collectionId,
+	}
+	if required, ok := options["required"].(bool); ok {
+		field.Required = required
+	}
+	if maxSelect, ok := options["maxSelect"].(int); ok && maxSelect > 0 {
+		field.MaxSelect = maxSelect
+	} else {
+		field.MaxSelect = 1
+	}
+	if system, ok := options["system"].(bool); ok {
+		field.System = system
+	}
+	if hidden, ok := options["hidden"].(bool); ok {
+		field.Hidden = hidden
+	}
+	return field
+}
+
+// deleteUsersTable 删除users表
+func deleteUsersTable(txApp core.App) error {
+	usersCollection, err := txApp.FindCollectionByNameOrId("users")
+	if err != nil {
+		// 如果表不存在，不需要删除
+		return nil
+	}
+
+	if err := txApp.Delete(usersCollection); err != nil {
+		return fmt.Errorf("failed to delete users collection: %w", err)
+	}
+
+	return nil
 }
 
 // getValidFields 获取集合的有效字段列表（私有函数）

@@ -451,7 +451,7 @@ func TestUnmarshalRequestDataUnexportedFields(t *testing.T) {
 
 		unexported string
 		// to ensure that the reflection doesn't take tags with higher priority than the exported state
-		unexportedWithTag string `form:"unexportedWithTag" json:"unexportedWithTag"`
+		UnexportedWithTag string `form:"unexportedWithTag" json:"unexportedWithTag"`
 	}
 
 	dst := &TestStruct{}
@@ -477,7 +477,7 @@ func TestUnmarshalRequestDataUnexportedFields(t *testing.T) {
 		t.Fatalf("Expected the unexported field to remain empty, got %q", dst.unexported)
 	}
 
-	if dst.unexportedWithTag != "" {
-		t.Fatalf("Expected the unexportedWithTag field to remain empty, got %q", dst.unexportedWithTag)
+	if dst.UnexportedWithTag != "" {
+		t.Fatalf("Expected the unexportedWithTag field to remain empty, got %q", dst.UnexportedWithTag)
 	}
 }
