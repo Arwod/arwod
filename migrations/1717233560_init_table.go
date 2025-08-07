@@ -213,10 +213,10 @@ func createSysDictTypeCollection(txApp core.App) error {
 		Max:      100,
 	})
 	col.Fields.Add(&core.SelectField{
-		Name:     "status",
-		Required: false,
+		Name:      "status",
+		Required:  false,
 		MaxSelect: 1,
-		Values: []string{"0", "1"},
+		Values:    []string{"0", "1"},
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "create_by",
@@ -224,7 +224,7 @@ func createSysDictTypeCollection(txApp core.App) error {
 		Max:      64,
 	})
 	col.Fields.Add(&core.DateField{
-		Name:     "create_time",
+		Name:     "created",
 		Required: false,
 	})
 	col.Fields.Add(&core.TextField{
@@ -233,7 +233,7 @@ func createSysDictTypeCollection(txApp core.App) error {
 		Max:      64,
 	})
 	col.Fields.Add(&core.DateField{
-		Name:     "update_time",
+		Name:     "updated",
 		Required: false,
 	})
 	col.Fields.Add(&core.TextField{
@@ -286,16 +286,16 @@ func createSysDictDataCollection(txApp core.App) error {
 		Max:      100,
 	})
 	col.Fields.Add(&core.SelectField{
-		Name:     "is_default",
-		Required: false,
+		Name:      "is_default",
+		Required:  false,
 		MaxSelect: 1,
-		Values: []string{"Y", "N"},
+		Values:    []string{"Y", "N"},
 	})
 	col.Fields.Add(&core.SelectField{
-		Name:     "status",
-		Required: false,
+		Name:      "status",
+		Required:  false,
 		MaxSelect: 1,
-		Values: []string{"0", "1"},
+		Values:    []string{"0", "1"},
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "create_by",
@@ -303,7 +303,7 @@ func createSysDictDataCollection(txApp core.App) error {
 		Max:      64,
 	})
 	col.Fields.Add(&core.DateField{
-		Name:     "create_time",
+		Name:     "created",
 		Required: false,
 	})
 	col.Fields.Add(&core.TextField{
@@ -312,7 +312,7 @@ func createSysDictDataCollection(txApp core.App) error {
 		Max:      64,
 	})
 	col.Fields.Add(&core.DateField{
-		Name:     "update_time",
+		Name:     "updated",
 		Required: false,
 	})
 	col.Fields.Add(&core.TextField{
@@ -345,10 +345,10 @@ func createSysConfigCollection(txApp core.App) error {
 		Max:      500,
 	})
 	col.Fields.Add(&core.SelectField{
-		Name:     "type",
-		Required: false,
+		Name:      "type",
+		Required:  false,
 		MaxSelect: 1,
-		Values: []string{"Y", "N"},
+		Values:    []string{"Y", "N"},
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "create_by",
@@ -356,7 +356,7 @@ func createSysConfigCollection(txApp core.App) error {
 		Max:      64,
 	})
 	col.Fields.Add(&core.DateField{
-		Name:     "create_time",
+		Name:     "created",
 		Required: false,
 	})
 	col.Fields.Add(&core.TextField{
@@ -365,7 +365,7 @@ func createSysConfigCollection(txApp core.App) error {
 		Max:      64,
 	})
 	col.Fields.Add(&core.DateField{
-		Name:     "update_time",
+		Name:     "updated",
 		Required: false,
 	})
 	col.Fields.Add(&core.TextField{
@@ -408,10 +408,10 @@ func createSysLogininforCollection(txApp core.App) error {
 		Max:      50,
 	})
 	col.Fields.Add(&core.SelectField{
-		Name:     "status",
-		Required: false,
+		Name:      "status",
+		Required:  false,
 		MaxSelect: 1,
-		Values: []string{"0", "1"},
+		Values:    []string{"0", "1"},
 	})
 	col.Fields.Add(&core.TextField{
 		Name:     "msg",
@@ -424,7 +424,7 @@ func createSysLogininforCollection(txApp core.App) error {
 		Max:      64,
 	})
 	col.Fields.Add(&core.DateField{
-		Name:     "create_time",
+		Name:     "created",
 		Required: false,
 	})
 	col.Fields.Add(&core.TextField{
@@ -433,7 +433,7 @@ func createSysLogininforCollection(txApp core.App) error {
 		Max:      64,
 	})
 	col.Fields.Add(&core.DateField{
-		Name:     "update_time",
+		Name:     "updated",
 		Required: false,
 	})
 
@@ -529,6 +529,12 @@ func addRelationFields(txApp core.App) error {
 		return fmt.Errorf("failed to find %s collection: %w", TableSysDept, err)
 	}
 
+	// 获取菜单表集合
+	sysMenuCol, err := txApp.FindCollectionByNameOrId(TableSysMenu)
+	if err != nil {
+		return fmt.Errorf("failed to find %s collection: %w", TableSysMenu, err)
+	}
+
 	// 添加部门ID关联字段
 	sysUserCol.Fields.Add(&core.RelationField{
 		Name:         "dept_id",
@@ -551,12 +557,6 @@ func addRelationFields(txApp core.App) error {
 
 	if err := txApp.Save(sysDeptCol); err != nil {
 		return fmt.Errorf("failed to update %s collection: %w", TableSysDept, err)
-	}
-
-	// 获取菜单表集合
-	sysMenuCol, err := txApp.FindCollectionByNameOrId(TableSysMenu)
-	if err != nil {
-		return fmt.Errorf("failed to find %s collection: %w", TableSysMenu, err)
 	}
 
 	// 为菜单表添加parent_id自引用关联字段
