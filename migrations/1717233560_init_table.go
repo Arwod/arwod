@@ -24,6 +24,7 @@ const (
 	TableSysConfig     = "sys_config"          // 参数配置表
 	TableSysLogininfor = "sys_logininfor"      // 系统访问记录表
 	TableSysUserOnline = "sys_user_online"     // 在线用户记录表
+	TableSysNotice     = "sys_notice"          // 通知公告表
 )
 
 func init() {
@@ -88,6 +89,11 @@ func init() {
 			return fmt.Errorf("%s creation error: %w", TableSysUserOnline, err)
 		}
 
+		// 创建通知公告表
+		if err := createSysNoticeCollection(txApp); err != nil {
+			return fmt.Errorf("%s creation error: %w", TableSysNotice, err)
+		}
+
 		// 添加关联字段（在所有表创建完成后）
 		if err := addRelationFields(txApp); err != nil {
 			return fmt.Errorf("relation fields creation error: %w", err)
@@ -97,6 +103,7 @@ func init() {
 	}, func(txApp core.App) error {
 		// 回滚时删除所有创建的表
 		tables := []string{
+			TableSysNotice,
 			TableSysUserOnline,
 			TableSysLogininfor,
 			TableSysConfig,
@@ -1139,6 +1146,76 @@ func createSysOperLogCollection(txApp core.App) error {
 		Name:     "cost_time",
 		Required: false,
 		Min:      types.Pointer(0.0),
+	})
+
+	return txApp.Save(col)
+}
+
+// 创建通知公告表
+func createSysNoticeCollection(txApp core.App) error {
+	col := core.NewBaseCollection(TableSysNotice)
+	col.System = false
+
+	// 公告标题
+	col.Fields.Add(&core.TextField{
+		Name:     "title",
+		Required: true,
+		Max:      50,
+	})
+
+	// 公告类型（1通知 2公告）
+	col.Fields.Add(&core.SelectField{
+		Name:      "type",
+		Required:  true,
+		MaxSelect: 1,
+		Values:    []string{"1", "2"},
+	})
+
+	// 公告内容
+	col.Fields.Add(&core.EditorField{
+		Name:     "content",
+		Required: false,
+	})
+
+	// 公告状态（0正常 1关闭）
+	col.Fields.Add(&core.SelectField{
+		Name:      "status",
+		Required:  false,
+		MaxSelect: 1,
+		Values:    []string{"0", "1"},
+	})
+
+	// 创建者
+	col.Fields.Add(&core.TextField{
+		Name:     "create_by",
+		Required: false,
+		Max:      64,
+	})
+
+	// 创建时间
+	col.Fields.Add(&core.DateField{
+		Name:     "created",
+		Required: false,
+	})
+
+	// 更新者
+	col.Fields.Add(&core.TextField{
+		Name:     "update_by",
+		Required: false,
+		Max:      64,
+	})
+
+	// 更新时间
+	col.Fields.Add(&core.DateField{
+		Name:     "updated",
+		Required: false,
+	})
+
+	// 备注
+	col.Fields.Add(&core.TextField{
+		Name:     "remark",
+		Required: false,
+		Max:      255,
 	})
 
 	return txApp.Save(col)
