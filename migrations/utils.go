@@ -27,22 +27,12 @@ const (
 	TableSysUserPost     = "sys_user_position"
 )
 
-// 定义关系字段映射
-type RelationFieldConfig struct {
-	TableName   string
-	FieldName   string
-	TargetTable string
-	Options     map[string]interface{}
-}
-
 // TableCreationRequest 表创建请求结构
 type TableCreationRequest struct {
-	TableName        string
-	IsAuthCollection bool
-	AuthOptions      *AuthCollectionOptions
-	Fields           core.FieldsList
-	Indexes          []string
-	Relations        []RelationFieldConfig
+	TableName string
+	TableType string // 设置默认值为 base，可选值：base, auth，view
+	Fields    core.FieldsList
+	Indexes   []string
 }
 
 // AuthCollectionOptions 认证集合选项
@@ -72,15 +62,12 @@ func CreateTable(txApp core.App, request TableCreationRequest) error {
 		}
 	}()
 
-	collection := core.NewBaseCollection(request.TableName)
-
-	if request.IsAuthCollection {
-		authCollection := core.NewAuthCollection(request.TableName)
-		if request.AuthOptions != nil {
-			authCollection.AuthToken.Duration = 1209600 // 14 days
-		}
-		collection = authCollection
+	// 此处使用core.NewCollection函数创建，使用TableType指定集合类型
+	// 当未指定TableType时，默认为base
+	if request.TableType == "" {
+		request.TableType = core.CollectionTypeBase
 	}
+	collection := core.NewCollection(request.TableType, request.TableName)
 
 	// 添加字段
 	for _, field := range request.Fields {
@@ -113,6 +100,19 @@ func CreateTable(txApp core.App, request TableCreationRequest) error {
 
 // AddRelationFields 为已存在的表添加关联字段
 func AddRelationFields(txApp core.App, tableName string, fields core.FieldsList) error {
+	// 关闭外键约束检查以支持自引用表
+	if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = OFF").Execute(); err != nil {
+		return fmt.Errorf("failed to disable foreign key constraints: %w", err)
+	}
+
+	// 确保在函数结束时重新开启外键约束检查
+	defer func() {
+		if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = ON").Execute(); err != nil {
+			// 记录错误但不影响主流程
+			fmt.Printf("Warning: failed to re-enable foreign key constraints: %v\n", err)
+		}
+	}()
+
 	collection, err := txApp.FindCollectionByNameOrId(tableName)
 	if err != nil {
 		return fmt.Errorf("failed to find collection %s: %w", tableName, err)
@@ -133,6 +133,19 @@ func AddRelationFields(txApp core.App, tableName string, fields core.FieldsList)
 
 // AddSingleRelationField 为指定表添加单个关联字段
 func AddSingleRelationField(app core.App, tableName, fieldName, targetTable string, options map[string]interface{}) error {
+	// 关闭外键约束检查以支持自引用表
+	if _, err := app.DB().NewQuery("PRAGMA foreign_keys = OFF").Execute(); err != nil {
+		return fmt.Errorf("failed to disable foreign key constraints: %w", err)
+	}
+
+	// 确保在函数结束时重新开启外键约束检查
+	defer func() {
+		if _, err := app.DB().NewQuery("PRAGMA foreign_keys = ON").Execute(); err != nil {
+			// 记录错误但不影响主流程
+			fmt.Printf("Warning: failed to re-enable foreign key constraints: %v\n", err)
+		}
+	}()
+
 	collection, err := app.FindCollectionByNameOrId(tableName)
 	if err != nil {
 		return err
@@ -396,6 +409,19 @@ func setRecordFields(record *core.Record, dataItem map[string]interface{}, valid
 // 返回:
 //   - error: 错误信息
 func ImportData(txApp core.App, request DataImportRequest) error {
+	// 关闭外键约束检查以支持自引用表数据导入
+	if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = OFF").Execute(); err != nil {
+		return fmt.Errorf("failed to disable foreign key constraints: %w", err)
+	}
+
+	// 确保在函数结束时重新开启外键约束检查
+	defer func() {
+		if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = ON").Execute(); err != nil {
+			// 记录错误但不影响主流程
+			fmt.Printf("Warning: failed to re-enable foreign key constraints: %v\n", err)
+		}
+	}()
+
 	// 验证必要字段
 	if request.Table == "" {
 		return fmt.Errorf("表名不能为空")
@@ -464,6 +490,19 @@ func ImportData(txApp core.App, request DataImportRequest) error {
 // 返回:
 //   - error: 错误信息
 func RollbackData(txApp core.App, request DataImportRequest) error {
+	// 关闭外键约束检查以支持自引用表数据回滚
+	if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = OFF").Execute(); err != nil {
+		return fmt.Errorf("failed to disable foreign key constraints: %w", err)
+	}
+
+	// 确保在函数结束时重新开启外键约束检查
+	defer func() {
+		if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = ON").Execute(); err != nil {
+			// 记录错误但不影响主流程
+			fmt.Printf("Warning: failed to re-enable foreign key constraints: %v\n", err)
+		}
+	}()
+
 	// 验证必要字段
 	if request.Table == "" {
 		return fmt.Errorf("表名不能为空")

@@ -92,11 +92,8 @@ var tableCreationRequests = []TableCreationRequest{
 	},
 	// 6. 用户表（依赖部门表）
 	{
-		TableName:        TableSysUser,
-		IsAuthCollection: true,
-		AuthOptions: &AuthCollectionOptions{
-			TokenKey: "_pb_sys_users_auth_",
-		},
+		TableName: TableSysUser,
+		TableType: core.CollectionTypeAuth,
 		Fields: core.NewFieldsList(
 			&core.TextField{Name: "username", Required: true, Max: 30},
 			&core.RelationField{
