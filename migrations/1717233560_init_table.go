@@ -287,9 +287,9 @@ func init() {
 	// 注册迁移函数
 	core.AppMigrations.Register(func(txApp core.App) error {
 		// 删除默认的users表
-		// if err := deleteUsersTable(txApp); err != nil {
-		// 	return fmt.Errorf("failed to delete users table: %w", err)
-		// }
+		if err := deleteUsersTable(txApp); err != nil {
+			return fmt.Errorf("failed to delete users table: %w", err)
+		}
 
 		// 创建所有表
 		for _, request := range tableCreationRequests {
