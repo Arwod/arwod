@@ -477,7 +477,7 @@ func TestUnmarshalRequestDataUnexportedFields(t *testing.T) {
 		t.Fatalf("Expected the unexported field to remain empty, got %q", dst.unexported)
 	}
 
-	if dst.UnexportedWithTag != "" {
-		t.Fatalf("Expected the unexportedWithTag field to remain empty, got %q", dst.UnexportedWithTag)
+	if dst.UnexportedWithTag != "test" {
+		t.Fatalf("Expected the unexportedWithTag field to be %q, got %q", "test", dst.UnexportedWithTag)
 	}
 }
