@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/types"
@@ -286,9 +287,9 @@ func init() {
 	// 注册迁移函数
 	core.AppMigrations.Register(func(txApp core.App) error {
 		// 删除默认的users表
-		if err := deleteUsersTable(txApp); err != nil {
-			return fmt.Errorf("failed to delete users table: %w", err)
-		}
+		// if err := deleteUsersTable(txApp); err != nil {
+		// 	return fmt.Errorf("failed to delete users table: %w", err)
+		// }
 
 		// 创建所有表
 		for _, request := range tableCreationRequests {
@@ -299,13 +300,13 @@ func init() {
 
 		return nil
 	}, func(txApp core.App) error {
-		// 回滚操作：删除所有创建的表
-		allTables := append([]string{},
-			TableSysUserPost, TableSysRoleDept, TableSysRoleMenu, TableSysUserRole, // 关联表先删除
-			TableSysNotice, TableSysUserOnline, TableSysLoginInfo, TableSysConfig,
-			TableSysOperationLog, TableSysDictData, TableSysDictType, TableSysMenu,
-			TableSysUser, TableSysRole, TableSysPost, TableSysDept, // 基础表后删除
-		)
+		// 根据tableCreationRequests变量，构建allTables切片，并且，把allTables倒序
+		var allTables []string
+		for _, request := range tableCreationRequests {
+			allTables = append(allTables, request.TableName)
+		}
+		// 按照创建的逆顺序回滚
+		slices.Reverse(allTables)
 
 		for _, tableName := range allTables {
 			collection, err := txApp.FindCollectionByNameOrId(tableName)
