@@ -13,8 +13,14 @@ var tableCreationRequests = []TableCreationRequest{
 	// 1. 部门表（基础表，自引用）
 	{
 		TableName: TableSysDept,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "name", Required: true, Max: 30},
+			&core.RelationField{
+				Name:         "parent_id",
+				Required:     false,
+				MaxSelect:    1,
+				CollectionId: TableSysDept, // 此处使用表名，后续会统一转换为表的id
+			},
 			&core.TextField{Name: "ancestors", Max: 50},
 			&core.TextField{Name: "leader", Max: 20},
 			&core.TextField{Name: "phone", Max: 11},
@@ -23,29 +29,23 @@ var tableCreationRequests = []TableCreationRequest{
 			&core.SelectField{Name: "delete_flag", MaxSelect: 1, Values: []string{"0", "2"}},
 			&core.TextField{Name: "remark", Max: 500},
 			&core.NumberField{Name: "order_num", Min: types.Pointer(0.0)},
-			&core.RelationField{
-				Name:         "parent_id",
-				Required:     false,
-				MaxSelect:    1,
-				CollectionId: TableSysDept,
-			},
-		),
+		},
 	},
 	// 2. 岗位表（基础表）
 	{
 		TableName: TableSysPost,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "code", Required: true, Max: 64},
 			&core.TextField{Name: "name", Required: true, Max: 50},
 			&core.SelectField{Name: "status", Required: true, MaxSelect: 1, Values: []string{"0", "1"}},
 			&core.TextField{Name: "remark", Max: 500},
 			&core.NumberField{Name: "order_num", Min: types.Pointer(0.0)},
-		),
+		},
 	},
 	// 3. 角色表（基础表）
 	{
 		TableName: TableSysRole,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "name", Required: true, Max: 30},
 			&core.TextField{Name: "key", Max: 100, Required: true},
 			&core.SelectField{Name: "data_scope", MaxSelect: 1, Values: []string{"1", "2", "3", "4"}},
@@ -53,7 +53,7 @@ var tableCreationRequests = []TableCreationRequest{
 			&core.SelectField{Name: "delete_flag", MaxSelect: 1, Values: []string{"0", "2"}},
 			&core.TextField{Name: "remark", Max: 500},
 			&core.NumberField{Name: "order_num", Min: types.Pointer(0.0)},
-		),
+		},
 		Indexes: []string{
 			"CREATE UNIQUE INDEX `idx_name_%s` ON `%s` (`name`)",
 		},
@@ -61,8 +61,14 @@ var tableCreationRequests = []TableCreationRequest{
 	// 4. 菜单表（基础表，自引用）
 	{
 		TableName: TableSysMenu,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "name", Required: true, Max: 50},
+			&core.RelationField{
+				Name:         "parent_id",
+				Required:     false,
+				MaxSelect:    1,
+				CollectionId: TableSysMenu,
+			},
 			&core.TextField{Name: "url", Max: 200},
 			&core.TextField{Name: "target", Max: 20},
 			&core.SelectField{Name: "type", MaxSelect: 1, Values: []string{"M", "C", "F"}},
@@ -72,29 +78,22 @@ var tableCreationRequests = []TableCreationRequest{
 			&core.TextField{Name: "icon", Max: 100},
 			&core.TextField{Name: "remark", Max: 500},
 			&core.NumberField{Name: "order_num", Min: types.Pointer(0.0)},
-			&core.RelationField{
-				Name:         "parent_id",
-				Required:     false,
-				MaxSelect:    1,
-				CollectionId: TableSysMenu,
-			},
-		),
+		},
 	},
 	// 5. 字典类型表（基础表）
 	{
 		TableName: TableSysDictType,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "name", Max: 100},
-			&core.TextField{Name: "type", Max: 100},
 			&core.SelectField{Name: "status", MaxSelect: 1, Values: []string{"0", "1"}},
 			&core.TextField{Name: "remark", Max: 500},
-		),
+		},
 	},
 	// 6. 用户表（依赖部门表）
 	{
 		TableName: TableSysUser,
 		TableType: core.CollectionTypeAuth,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "username", Required: true, Max: 30},
 			&core.RelationField{
 				Name:         "dept_id",
@@ -112,45 +111,44 @@ var tableCreationRequests = []TableCreationRequest{
 			&core.DateField{Name: "login_date"},
 			&core.TextField{Name: "msg", Max: 255},
 			&core.TextField{Name: "remark", Max: 500},
-		),
+		},
 	},
 	// 7. 字典数据表（依赖字典类型表）
 	{
 		TableName: TableSysDictData,
-		Fields: core.NewFieldsList(
-			&core.NumberField{Name: "code", Min: types.Pointer(0.0)},
+		Fields: []core.Field{
+			&core.NumberField{Name: "name", Min: types.Pointer(0.0)},
+			&core.RelationField{
+				Name:         "type_id",
+				Required:     false,
+				MaxSelect:    1,
+				CollectionId: TableSysDictType,
+			},
 			&core.TextField{Name: "label", Max: 100},
 			&core.TextField{Name: "value", Max: 100},
-			&core.TextField{Name: "type", Max: 100},
 			&core.TextField{Name: "css_class", Max: 100},
 			&core.TextField{Name: "list_class", Max: 100},
 			&core.SelectField{Name: "is_default", MaxSelect: 1, Values: []string{"Y", "N"}},
 			&core.SelectField{Name: "status", MaxSelect: 1, Values: []string{"0", "1"}},
 			&core.TextField{Name: "remark", Max: 500},
 			&core.NumberField{Name: "order_num", Min: types.Pointer(0.0)},
-			&core.RelationField{
-				Name:         "dict_type_id",
-				Required:     false,
-				MaxSelect:    1,
-				CollectionId: TableSysDictType,
-			},
-		),
+		},
 	},
 	// 8. 系统配置表（独立表）
 	{
 		TableName: TableSysConfig,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "name", Max: 100},
 			&core.TextField{Name: "key", Max: 100},
 			&core.TextField{Name: "value", Max: 500},
 			&core.SelectField{Name: "type", Values: []string{"Y", "N"}, MaxSelect: 1},
 			&core.TextField{Name: "remark", Max: 500},
-		),
+		},
 	},
 	// 9. 操作日志表（独立表）
 	{
 		TableName: TableSysOperationLog,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "title", Max: 50},
 			&core.NumberField{Name: "business_type", Min: types.Pointer(0.0)},
 			&core.TextField{Name: "method", Max: 100},
@@ -167,12 +165,12 @@ var tableCreationRequests = []TableCreationRequest{
 			&core.TextField{Name: "error_msg", Max: 2000},
 			&core.DateField{Name: "oper_time"},
 			&core.NumberField{Name: "cost_time", Min: types.Pointer(0.0)},
-		),
+		},
 	},
 	// 10. 系统访问记录表（独立表）
 	{
 		TableName: TableSysLoginInfo,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "name", Max: 50},
 			&core.TextField{Name: "ipaddr", Max: 128},
 			&core.TextField{Name: "location", Max: 255},
@@ -181,12 +179,12 @@ var tableCreationRequests = []TableCreationRequest{
 			&core.SelectField{Name: "status", MaxSelect: 1, Values: []string{"0", "1"}},
 			&core.TextField{Name: "msg", Max: 255},
 			&core.TextField{Name: "remark", Max: 500},
-		),
+		},
 	},
 	// 11. 在线用户记录表（独立表）
 	{
 		TableName: TableSysUserOnline,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "username", Max: 50},
 			&core.TextField{Name: "dept_name", Max: 50},
 			&core.TextField{Name: "ipaddr", Max: 128},
@@ -197,23 +195,23 @@ var tableCreationRequests = []TableCreationRequest{
 			&core.DateField{Name: "start_timestamp"},
 			&core.DateField{Name: "last_access_time"},
 			&core.NumberField{Name: "expire_time", Min: types.Pointer(0.0)},
-		),
+		},
 	},
 	// 12. 通知公告表（独立表）
 	{
 		TableName: TableSysNotice,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.TextField{Name: "title", Required: true, Max: 50},
 			&core.SelectField{Name: "type", Values: []string{"1", "2"}, Required: true, MaxSelect: 1},
 			&core.EditorField{Name: "content"},
 			&core.SelectField{Name: "status", MaxSelect: 1, Values: []string{"0", "1"}},
 			&core.TextField{Name: "remark", Max: 500},
-		),
+		},
 	},
 	// 13. 用户角色关联表
 	{
 		TableName: TableSysUserRole,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.RelationField{
 				Name:         "user_id",
 				Required:     true,
@@ -226,12 +224,12 @@ var tableCreationRequests = []TableCreationRequest{
 				MaxSelect:    1,
 				CollectionId: TableSysRole,
 			},
-		),
+		},
 	},
 	// 14. 角色菜单关联表
 	{
 		TableName: TableSysRoleMenu,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.RelationField{
 				Name:         "role_id",
 				Required:     true,
@@ -244,12 +242,12 @@ var tableCreationRequests = []TableCreationRequest{
 				MaxSelect:    1,
 				CollectionId: TableSysMenu,
 			},
-		),
+		},
 	},
 	// 15. 角色部门关联表
 	{
 		TableName: TableSysRoleDept,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.RelationField{
 				Name:         "role_id",
 				Required:     true,
@@ -262,12 +260,12 @@ var tableCreationRequests = []TableCreationRequest{
 				MaxSelect:    1,
 				CollectionId: TableSysDept,
 			},
-		),
+		},
 	},
 	// 16. 用户岗位关联表
 	{
 		TableName: TableSysUserPost,
-		Fields: core.NewFieldsList(
+		Fields: []core.Field{
 			&core.RelationField{
 				Name:         "user_id",
 				Required:     true,
@@ -275,12 +273,12 @@ var tableCreationRequests = []TableCreationRequest{
 				CollectionId: TableSysUser,
 			},
 			&core.RelationField{
-				Name:         "post_id",
+				Name:         "position_id",
 				Required:     true,
 				MaxSelect:    1,
 				CollectionId: TableSysPost,
 			},
-		),
+		},
 	},
 }
 

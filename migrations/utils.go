@@ -27,17 +27,18 @@ const (
 	TableSysUserPost     = "sys_user_position"
 )
 
-// TableCreationRequest 表创建请求结构
-type TableCreationRequest struct {
-	TableName string
-	TableType string // 设置默认值为 base，可选值：base, auth，view
-	Fields    core.FieldsList
-	Indexes   []string
+type RelationField struct {
+	AfterField string              `json:"afterField"` // 插入到指定field_name字段的后面，若为空，默认插入到最后
+	Field      *core.RelationField `json:"field"`
 }
 
-// AuthCollectionOptions 认证集合选项
-type AuthCollectionOptions struct {
-	TokenKey string
+// TableCreationRequest 表创建请求结构
+type TableCreationRequest struct {
+	TableName      string          `json:"tableName"`
+	TableType      string          `json:"tableType"` // 设置默认值为 base，可选值：base, auth，view
+	Fields         []core.Field    `json:"fields"`
+	RelationFields []RelationField `json:"relationFields"` // TODO:新增关联字段，关联字段放在Fields中创建会报错，暂未排查原因
+	Indexes        []string        `json:"indexes"`        // 新增索引字段
 }
 
 // DataImportRequest 数据导入请求结构
@@ -49,19 +50,6 @@ type DataImportRequest struct {
 
 // CreateTable 创建表
 func CreateTable(txApp core.App, request TableCreationRequest) error {
-	// 关闭外键约束检查以支持自引用表
-	if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = OFF").Execute(); err != nil {
-		return fmt.Errorf("failed to disable foreign key constraints: %w", err)
-	}
-
-	// 确保在函数结束时重新开启外键约束检查
-	defer func() {
-		if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = ON").Execute(); err != nil {
-			// 记录错误但不影响主流程
-			fmt.Printf("Warning: failed to re-enable foreign key constraints: %v\n", err)
-		}
-	}()
-
 	// 此处使用core.NewCollection函数创建，使用TableType指定集合类型
 	// 当未指定TableType时，默认为base
 	if request.TableType == "" {
@@ -71,6 +59,21 @@ func CreateTable(txApp core.App, request TableCreationRequest) error {
 
 	// 添加字段
 	for _, field := range request.Fields {
+
+		if field.Type() == core.FieldTypeRelation {
+			// 如果是本表
+			if field.(*core.RelationField).CollectionId == request.TableName {
+				field.(*core.RelationField).CollectionId = collection.Id
+			} else {
+				// 其他表，需要检查是否存在
+				col, err := txApp.FindCollectionByNameOrId(field.(*core.RelationField).CollectionId)
+				if err != nil {
+					return fmt.Errorf("failed to find collection: %w", err)
+				}
+				field.(*core.RelationField).CollectionId = col.Id
+			}
+		}
+
 		if field != nil {
 			collection.Fields.Add(field)
 		}
@@ -82,8 +85,8 @@ func CreateTable(txApp core.App, request TableCreationRequest) error {
 	collection.Fields.Add(&core.TextField{Name: "updated_by", Max: 64})
 	collection.Fields.Add(&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true})
 
-	// 保存集合
-	if err := txApp.Save(collection); err != nil {
+	// 保存集合,不做校验
+	if err := txApp.SaveNoValidate(collection); err != nil {
 		return fmt.Errorf("failed to save collection: %w", err)
 	}
 
