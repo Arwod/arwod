@@ -7,11 +7,113 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+// 表名常量定义
+const (
+	TableSysDept         = "sys_department"
+	TableSysUser         = "sys_user"
+	TableSysPost         = "sys_position"
+	TableSysRole         = "sys_role"
+	TableSysMenu         = "sys_menu"
+	TableSysOperationLog = "sys_operation_log"
+	TableSysDictType     = "sys_dict_type"
+	TableSysDictData     = "sys_dict_data"
+	TableSysConfig       = "sys_config"
+	TableSysLoginInfo    = "sys_login_info"
+	TableSysUserOnline   = "sys_user_online"
+	TableSysNotice       = "sys_notice"
+	TableSysUserRole     = "sys_user_role"
+	TableSysRoleMenu     = "sys_role_menu"
+	TableSysRoleDept     = "sys_role_department"
+	TableSysUserPost     = "sys_user_position"
+)
+
+type RelationField struct {
+	AfterField string              `json:"afterField"` // 插入到指定field_name字段的后面，若为空，默认插入到最后
+	Field      *core.RelationField `json:"field"`
+}
+
+// TableCreationRequest 表创建请求结构
+type TableCreationRequest struct {
+	TableName      string          `json:"tableName"`
+	TableType      string          `json:"tableType"` // 设置默认值为 base，可选值：base, auth，view
+	Fields         []core.Field    `json:"fields"`
+	RelationFields []RelationField `json:"relationFields"` // TODO:新增关联字段，关联字段放在Fields中创建会报错，暂未排查原因
+	Indexes        []string        `json:"indexes"`        // 新增索引字段
+}
+
 // DataImportRequest 数据导入请求结构
 type DataImportRequest struct {
 	Table        string                   `json:"table"`
 	Data         []map[string]interface{} `json:"data"`
 	UniqueFields []string                 `json:"uniqueFields"`
+}
+
+// CreateTable 创建表
+func CreateTable(txApp core.App, request TableCreationRequest) error {
+	// 此处使用core.NewCollection函数创建，使用TableType指定集合类型
+	// 当未指定TableType时，默认为base
+	if request.TableType == "" {
+		request.TableType = core.CollectionTypeBase
+	}
+	collection := core.NewCollection(request.TableType, request.TableName)
+
+	// 添加字段
+	for _, field := range request.Fields {
+
+		if field.Type() == core.FieldTypeRelation {
+			// 如果是本表
+			if field.(*core.RelationField).CollectionId == request.TableName {
+				field.(*core.RelationField).CollectionId = collection.Id
+			} else {
+				// 其他表，需要检查是否存在
+				col, err := txApp.FindCollectionByNameOrId(field.(*core.RelationField).CollectionId)
+				if err != nil {
+					return fmt.Errorf("failed to find collection: %w", err)
+				}
+				field.(*core.RelationField).CollectionId = col.Id
+			}
+		}
+
+		if field != nil {
+			collection.Fields.Add(field)
+		}
+	}
+
+	// 统一添加通用字段
+	collection.Fields.Add(&core.TextField{Name: "created_by", Max: 64})
+	collection.Fields.Add(&core.AutodateField{Name: "created", OnCreate: true})
+	collection.Fields.Add(&core.TextField{Name: "updated_by", Max: 64})
+	collection.Fields.Add(&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true})
+
+	// 保存集合,不做校验
+	if err := txApp.SaveNoValidate(collection); err != nil {
+		return fmt.Errorf("failed to save collection: %w", err)
+	}
+
+	// 创建索引
+	for _, indexSQL := range request.Indexes {
+		formattedSQL := fmt.Sprintf(indexSQL, collection.Name, collection.Name)
+		if _, err := txApp.DB().NewQuery(formattedSQL).Execute(); err != nil {
+			return fmt.Errorf("failed to create index: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// deleteUsersTable 删除users表
+func deleteUsersTable(txApp core.App) error {
+	usersCollection, err := txApp.FindCollectionByNameOrId("users")
+	if err != nil {
+		// 如果表不存在，不需要删除
+		return nil
+	}
+
+	if err := txApp.Delete(usersCollection); err != nil {
+		return fmt.Errorf("failed to delete users collection: %w", err)
+	}
+
+	return nil
 }
 
 // getValidFields 获取集合的有效字段列表（私有函数）
@@ -84,6 +186,19 @@ func setRecordFields(record *core.Record, dataItem map[string]interface{}, valid
 // 返回:
 //   - error: 错误信息
 func ImportData(txApp core.App, request DataImportRequest) error {
+	// 关闭外键约束检查以支持自引用表数据导入
+	if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = OFF").Execute(); err != nil {
+		return fmt.Errorf("failed to disable foreign key constraints: %w", err)
+	}
+
+	// 确保在函数结束时重新开启外键约束检查
+	defer func() {
+		if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = ON").Execute(); err != nil {
+			// 记录错误但不影响主流程
+			fmt.Printf("Warning: failed to re-enable foreign key constraints: %v\n", err)
+		}
+	}()
+
 	// 验证必要字段
 	if request.Table == "" {
 		return fmt.Errorf("表名不能为空")
@@ -152,6 +267,19 @@ func ImportData(txApp core.App, request DataImportRequest) error {
 // 返回:
 //   - error: 错误信息
 func RollbackData(txApp core.App, request DataImportRequest) error {
+	// 关闭外键约束检查以支持自引用表数据回滚
+	if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = OFF").Execute(); err != nil {
+		return fmt.Errorf("failed to disable foreign key constraints: %w", err)
+	}
+
+	// 确保在函数结束时重新开启外键约束检查
+	defer func() {
+		if _, err := txApp.DB().NewQuery("PRAGMA foreign_keys = ON").Execute(); err != nil {
+			// 记录错误但不影响主流程
+			fmt.Printf("Warning: failed to re-enable foreign key constraints: %v\n", err)
+		}
+	}()
+
 	// 验证必要字段
 	if request.Table == "" {
 		return fmt.Errorf("表名不能为空")
