@@ -37,8 +37,9 @@ type TableCreationRequest struct {
 	TableName      string          `json:"tableName"`
 	TableType      string          `json:"tableType"` // 设置默认值为 base，可选值：base, auth，view
 	Fields         []core.Field    `json:"fields"`
-	RelationFields []RelationField `json:"relationFields"` // TODO:新增关联字段，关联字段放在Fields中创建会报错，暂未排查原因
-	Indexes        []string        `json:"indexes"`        // 新增索引字段
+	RelationFields []RelationField `json:"relationFields"`         // TODO:新增关联字段，关联字段放在Fields中创建会报错，暂未排查原因
+	Indexes        []string        `json:"indexes"`                // 新增索引字段
+	System         bool            `json:"system" default:"false"` // 是否系统表，默认false，系统表不能删除
 }
 
 // DataImportRequest 数据导入请求结构
@@ -56,6 +57,7 @@ func CreateTable(txApp core.App, request TableCreationRequest) error {
 		request.TableType = core.CollectionTypeBase
 	}
 	collection := core.NewCollection(request.TableType, request.TableName)
+	collection.System = request.System
 
 	// 添加字段
 	for _, field := range request.Fields {
