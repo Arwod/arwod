@@ -19,12 +19,15 @@ func init() {
 		{
 			TableName: Table_Jobs,
 			Fields: []core.Field{
-				&core.TextField{Name: "name", Required: true, Max: 30},
-				&core.TextField{Name: "cron", Required: true, Max: 30},
+				&core.TextField{Name: "name", Required: true},
+				&core.TextField{Name: "cron", Required: true},
 				&core.SelectField{Name: "status", Required: true, MaxSelect: 1, Values: []string{"0", "1"}},
 				&core.TextField{Name: "service", Required: false, Max: 128}, //系统注册的服务，
 				&core.TextField{Name: "script", Required: false},            // 长度不作限制，脚本内容
-				&core.TextField{Name: "remark", Max: 30},
+				&core.TextField{Name: "remark", Required: false, Max: 255},
+			},
+			Indexes: []string{
+				"CREATE UNIQUE INDEX `idx_name_%s` ON `%s` (`name`)",
 			},
 			System: true,
 		},

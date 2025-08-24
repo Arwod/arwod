@@ -1380,6 +1380,7 @@ func (app *BaseApp) registerBaseHooks() {
 	app.registerMFAHooks()
 	app.registerOTPHooks()
 	app.registerAuthOriginHooks()
+	app.registerJobsSyncHooks()
 }
 
 // getLoggerMinLevel returns the logger min level based on the
