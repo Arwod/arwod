@@ -19,7 +19,7 @@
             "// 创建顺序：基础表 -> 依赖表 -> 关联表",
             "\t\tvar tableCreationRequests = []TableCreationRequest{",
             "\t\t{",
-            "\t\t\tTableName: TableSysDept,",
+            "\t\t\tTableName: Table$1,",
             "\t\t\tFields: []core.Field{",
             "\t\t\t\t&core.TextField{Name: \"name\", Required: true, Max: 30},",
             "\t\t\t},",
