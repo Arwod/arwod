@@ -19,7 +19,12 @@
         isLoading = true;
 
         try {
-            crons = await ApiClient.crons.getFullList();
+            const jobs = await ApiClient.collection('_jobs').getFullList();
+            // 将_jobs集合的数据转换为crons格式
+            crons = jobs.map(job => ({
+                id: job.name,
+                expression: job.cron
+            }));
             isLoading = false;
         } catch (err) {
             if (!err.isAbort) {
