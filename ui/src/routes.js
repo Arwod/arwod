@@ -1,6 +1,9 @@
 import PageIndex from "@/components/PageIndex.svelte";
 import PageLogs from "@/components/logs/PageLogs.svelte";
 import PageRecords from "@/components/records/PageRecords.svelte";
+import PageScripts from "@/components/scripts/PageScripts.svelte";
+import PageScriptLogs from "@/components/scripts/PageScriptLogs.svelte";
+import PageScriptMonitor from "@/components/scripts/PageScriptMonitor.svelte";
 import PageApplication from "@/components/settings/PageApplication.svelte";
 import PageBackups from "@/components/settings/PageBackups.svelte";
 import PageCrons from "@/components/settings/PageCrons.svelte";
@@ -49,6 +52,23 @@ const routes = {
     "/logs": wrap({
         component: PageLogs,
         conditions: [(_) => ApiClient.authStore.isValid],
+        userData: { showAppSidebar: true },
+    }),
+
+    "/scripts": wrap({
+        component: PageScripts,
+        conditions: [(_) => ApiClient.authStore.isValid],
+        userData: { showAppSidebar: true },
+    }),
+
+    "/scripts/logs": wrap({
+        component: PageScriptLogs,
+        conditions: [() => ApiClient.authStore.isValid],
+        userData: { showAppSidebar: true },
+    }),
+    "/scripts/monitor": wrap({
+        component: PageScriptMonitor,
+        conditions: [() => ApiClient.authStore.isValid],
         userData: { showAppSidebar: true },
     }),
 

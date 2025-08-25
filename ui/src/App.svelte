@@ -98,10 +98,20 @@
                     class="menu-item"
                     aria-label="Collections"
                     use:link
-                    use:active={{ path: "/collections/?.*", className: "current-route" }}
+
                     use:tooltip={{ text: "Collections", position: "right" }}
                 >
                     <i class="ri-database-2-line" />
+                </a>
+                <a
+                    href="/scripts"
+                    class="menu-item"
+                    aria-label="Scripts"
+                    use:link
+                    use:active={{ path: "/scripts/?.*", className: "current-route" }}
+                    use:tooltip={{ text: "Scripts", position: "right" }}
+                >
+                    <i class="ri-code-s-slash-line" />
                 </a>
                 <a
                     href="/logs"
