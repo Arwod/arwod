@@ -1,4 +1,5 @@
 <script>
+    import { onMount } from "svelte";
     import ApiClient from "@/utils/ApiClient";
     import tooltip from "@/actions/tooltip";
     import { pageTitle } from "@/stores/app";
@@ -26,6 +27,15 @@
         remark: "",
     };
     let isSubmitting = false;
+    let codeEditorComponent;
+
+    onMount(async () => {
+        try {
+            codeEditorComponent = (await import("@/components/base/CodeEditor.svelte")).default;
+        } catch (err) {
+            console.warn(err);
+        }
+    });
 
     loadJobs();
 
@@ -74,6 +84,10 @@
     }
 
     function openEditModal(job) {
+        if (isSystemJob(job)) {
+            addErrorToast("System jobs cannot be edited.");
+            return;
+        }
         editingJob = job;
         jobForm = {
             name: job.name,
@@ -144,6 +158,10 @@
     }
 
     async function toggleJobStatus(job) {
+        if (isSystemJob(job)) {
+            addErrorToast("System jobs status cannot be modified.");
+            return;
+        }
         try {
             const newStatus = job.status === "1" ? "0" : "1";
             await ApiClient.collection("_jobs").update(job.id, { status: newStatus });
@@ -197,7 +215,6 @@
                             <th>Name</th>
                             <th>Cron Expression</th>
                             <th>Status</th>
-                            <th>Service</th>
                             <th>Remark</th>
                             <th class="col-type-text col-sm">Actions</th>
                         </tr>
@@ -205,7 +222,7 @@
                     <tbody>
                         {#if isLoading}
                             <tr>
-                                <td colspan="6" class="txt-center p-lg">
+                                <td colspan="5" class="txt-center p-lg">
                                     <span class="loader"></span>
                                 </td>
                             </tr>
@@ -227,12 +244,16 @@
                                         <span class="txt-mono">{job.cron}</span>
                                     </td>
                                     <td>
-                                        <span class={getStatusClass(job.status)}>
-                                            {getStatusText(job.status)}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="txt-hint">{job.service || "-"}</span>
+                                        <div class="form-field form-field-toggle">
+                                            <input
+                                                type="checkbox"
+                                                id="status-{job.id}"
+                                                checked={job.status === "1"}
+                                                disabled={isSystemJob(job)}
+                                                on:change={() => !isSystemJob(job) && toggleJobStatus(job)}
+                                            />
+                                            <label for="status-{job.id}"></label>
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="txt-hint">{job.remark || "-"}</span>
@@ -252,31 +273,18 @@
                                                 <i class="ri-play-large-line"></i>
                                             </button>
 
-                                            <!-- Toggle status button -->
-                                            <button
-                                                type="button"
-                                                class="btn btn-sm btn-circle btn-hint btn-transparent"
-                                                aria-label={job.status === "1" ? "Disable" : "Enable"}
-                                                use:tooltip={job.status === "1" ? "Disable" : "Enable"}
-                                                on:click|preventDefault={() => toggleJobStatus(job)}
-                                            >
-                                                <i
-                                                    class={job.status === "1"
-                                                        ? "ri-pause-line"
-                                                        : "ri-play-line"}
-                                                ></i>
-                                            </button>
-
-                                            <!-- Edit button -->
-                                            <button
-                                                type="button"
-                                                class="btn btn-sm btn-circle btn-hint btn-transparent"
-                                                aria-label="Edit"
-                                                use:tooltip={"Edit"}
-                                                on:click|preventDefault={() => openEditModal(job)}
-                                            >
-                                                <i class="ri-pencil-line"></i>
-                                            </button>
+                                            <!-- Edit button (only for non-system jobs) -->
+                                            {#if !isSystemJob(job)}
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-circle btn-hint btn-transparent"
+                                                    aria-label="Edit"
+                                                    use:tooltip={"Edit"}
+                                                    on:click|preventDefault={() => openEditModal(job)}
+                                                >
+                                                    <i class="ri-pencil-line"></i>
+                                                </button>
+                                            {/if}
 
                                             <!-- Delete button (only for non-system jobs) -->
                                             {#if !isSystemJob(job)}
@@ -295,7 +303,7 @@
                                 </tr>
                             {:else}
                                 <tr>
-                                    <td colspan="6" class="txt-center txt-hint p-lg">
+                                    <td colspan="5" class="txt-center txt-hint p-lg">
                                         No cron jobs found.
                                     </td>
                                 </tr>
@@ -306,8 +314,8 @@
             </div>
 
             <p class="txt-hint m-t-xs">
-                System cron jobs are automatically registered and cannot be deleted. Custom jobs can be
-                created, edited, and deleted as needed.
+                System cron jobs are automatically registered and cannot be edited, disabled, or deleted.
+                Custom jobs can be created, edited, and deleted as needed.
             </p>
         </div>
     </div>
@@ -345,7 +353,7 @@
             </select>
         </Field>
 
-        <Field class="form-field" name="service" let:uniqueId>
+        <!-- <Field class="form-field" name="service" let:uniqueId>
             <label for={uniqueId}>Service</label>
             <input
                 type="text"
@@ -354,12 +362,30 @@
                 bind:value={jobForm.service}
             />
             <div class="help-block">Service identifier (optional)</div>
-        </Field>
+        </Field> -->
 
         <Field class="form-field" name="script" let:uniqueId>
             <label for={uniqueId}>Script</label>
-            <textarea id={uniqueId} rows="4" bind:value={jobForm.script}></textarea>
-            <div class="help-block">Script content to execute (optional)</div>
+            {#if codeEditorComponent}
+                <svelte:component
+                    this={codeEditorComponent}
+                    id={uniqueId}
+                    bind:value={jobForm.script}
+                    language="javascript"
+                    placeholder="// Enter your JavaScript code here..."
+                    minHeight={120}
+                    maxHeight={300}
+                    disabled={editingJob && isSystemJob(editingJob)}
+                />
+            {:else}
+                <textarea
+                    id={uniqueId}
+                    rows="4"
+                    bind:value={jobForm.script}
+                    disabled={editingJob && isSystemJob(editingJob)}
+                ></textarea>
+            {/if}
+            <div class="help-block">JavaScript code to execute (optional)</div>
         </Field>
 
         <Field class="form-field" name="remark" let:uniqueId>
@@ -433,23 +459,33 @@
     }
 
     .table th:nth-child(1) {
-        width: 20%;
+        width: 25%;
     } /* Name */
     .table th:nth-child(2) {
-        width: 20%;
+        width: 25%;
     } /* Cron Expression */
     .table th:nth-child(3) {
-        width: 10%;
+        width: 12%;
     } /* Status */
     .table th:nth-child(4) {
-        width: 15%;
-    } /* Service */
-    .table th:nth-child(5) {
-        width: 20%;
+        width: 23%;
     } /* Remark */
-    .table th:nth-child(6) {
+    .table th:nth-child(5) {
         width: 15%;
     } /* Actions */
+
+    /* Switch组件在表格中的样式优化 */
+    .table .form-field-toggle {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .table .form-field-toggle input[type="checkbox"] ~ label {
+        margin: 0;
+        min-height: auto;
+    }
 
     .col-sm {
         width: 120px;

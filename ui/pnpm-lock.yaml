@@ -60,8 +60,8 @@ importers:
         specifier: ^3.4.4
         version: 3.7.1
       pocketbase:
-        specifier: ^0.25.1
-        version: 0.25.2
+        specifier: 0.26.2
+        version: 0.26.2
       sass:
         specifier: ^1.45.0
         version: 1.89.2
@@ -672,8 +672,8 @@ packages:
     resolution: {integrity: sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==}
     engines: {node: '>=8.6'}
 
-  pocketbase@0.25.2:
-    resolution: {integrity: sha512-ONZl1+qHJMnhR2uacBlBJ90lm7njtL/zy0606+1ROfK9hSL4LRBRc8r89rMcNRzPzRqCNyoFTh2Qg/lYXdEC1w==}
+  pocketbase@0.26.2:
+    resolution: {integrity: sha512-WA8EOBc3QnSJh8rJ3iYoi9DmmPOMFIgVfAmIGux7wwruUEIzXgvrO4u0W2htfQjGIcyezJkdZOy5Xmh7SxAftw==}
 
   postcss@8.5.6:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
@@ -1289,7 +1289,7 @@ snapshots:
   picomatch@2.3.1:
     optional: true
 
-  pocketbase@0.25.2: {}
+  pocketbase@0.26.2: {}
 
   postcss@8.5.6:
     dependencies:
