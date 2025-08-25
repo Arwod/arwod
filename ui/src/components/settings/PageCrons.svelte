@@ -374,7 +374,7 @@
                     language="javascript"
                     placeholder="// Enter your JavaScript code here..."
                     minHeight={120}
-                    maxHeight={300}
+                    maxHeight={500}
                     disabled={editingJob && isSystemJob(editingJob)}
                 />
             {:else}
