@@ -39,7 +39,7 @@ func init() {
 				&core.TextField{Name: "name", Required: true, Max: 100},
 				&core.TextField{Name: "description", Required: false, Max: 500},
 				&core.TextField{Name: "content", Required: true}, // 脚本内容，不限制长度
-				&core.SelectField{Name: "trigger_type", Required: true, MaxSelect: 1, Values: []string{"manual", "hook", "cron"}},
+				&core.RelationField{Name: "trigger_type", Required: true, MaxSelect: 1, CollectionId: Table_EventsDict},
 				&core.TextField{Name: "trigger_config", Required: false}, // JSON格式的触发器配置
 				&core.SelectField{Name: "status", Required: true, MaxSelect: 1, Values: []string{"active", "inactive"}},
 				&core.NumberField{Name: "timeout", Required: false, Min: float64Ptr(1.0), Max: float64Ptr(300.0)}, // 超时时间（秒）

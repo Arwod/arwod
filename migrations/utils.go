@@ -103,21 +103,6 @@ func CreateTable(txApp core.App, request TableCreationRequest) error {
 	return nil
 }
 
-// deleteUsersTable 删除users表
-func deleteUsersTable(txApp core.App) error {
-	usersCollection, err := txApp.FindCollectionByNameOrId("users")
-	if err != nil {
-		// 如果表不存在，不需要删除
-		return nil
-	}
-
-	if err := txApp.Delete(usersCollection); err != nil {
-		return fmt.Errorf("failed to delete users collection: %w", err)
-	}
-
-	return nil
-}
-
 // getValidFields 获取集合的有效字段列表（私有函数）
 func getValidFields(collection *core.Collection) map[string]bool {
 	validFields := make(map[string]bool)
@@ -220,40 +205,81 @@ func ImportData(txApp core.App, request DataImportRequest) error {
 
 	// 插入或更新数据
 	for i, dataItem := range request.Data {
-		var record *core.Record
-		var isUpdate bool
-
-		// 如果指定了唯一字段，检查是否已存在
-		if len(request.UniqueFields) > 0 {
-			existingRecord, err := findExistingRecord(txApp, request.Table, dataItem, request.UniqueFields)
-			if err != nil {
-				return fmt.Errorf("查找现有记录失败: %w", err)
-			}
-			if existingRecord != nil {
-				// 使用已存在的记录进行更新
-				record = existingRecord
-				isUpdate = true
-			}
+		if err := importRecordRecursively(txApp, collection, dataItem, request.UniqueFields, validFields, "", fmt.Sprintf("第 %d 条数据", i+1)); err != nil {
+			return err
 		}
+	}
 
-		// 如果没有找到已存在的记录，创建新记录
-		if record == nil {
-			record = core.NewRecord(collection)
-			isUpdate = false
+	return nil
+}
+
+// importRecordRecursively 递归处理记录导入，支持任意层级的childData结构
+func importRecordRecursively(txApp core.App, collection *core.Collection, dataItem map[string]interface{}, uniqueFields []string, validFields map[string]bool, parentID string, context string) error {
+	var record *core.Record
+	var isUpdate bool
+
+	// 如果指定了唯一字段，检查是否已存在
+	if len(uniqueFields) > 0 {
+		existingRecord, err := findExistingRecord(txApp, collection.Name, dataItem, uniqueFields)
+		if err != nil {
+			return fmt.Errorf("查找现有记录失败 (%s): %w", context, err)
 		}
-
-		// 设置字段值和系统字段
-		if err := setRecordFields(record, dataItem, validFields, isUpdate); err != nil {
-			return fmt.Errorf("设置记录字段失败: %w", err)
+		if existingRecord != nil {
+			// 使用已存在的记录进行更新
+			record = existingRecord
+			isUpdate = true
 		}
+	}
 
-		// 保存记录
-		if err := txApp.Save(record); err != nil {
-			action := "保存"
-			if isUpdate {
-				action = "更新"
+	// 如果没有找到已存在的记录，创建新记录
+	if record == nil {
+		record = core.NewRecord(collection)
+		isUpdate = false
+	}
+
+	// 提取childData字段（如果存在）
+	var childData []map[string]interface{}
+	if childDataRaw, exists := dataItem["childData"]; exists {
+		if childDataSlice, ok := childDataRaw.([]interface{}); ok {
+			for _, child := range childDataSlice {
+				if childMap, ok := child.(map[string]interface{}); ok {
+					childData = append(childData, childMap)
+				}
 			}
-			return fmt.Errorf("%s第 %d 条数据失败: %w", action, i+1, err)
+		} else if childDataMap, ok := childDataRaw.([]map[string]interface{}); ok {
+			childData = childDataMap
+		}
+		// 从父记录数据中移除childData字段，避免保存时出错
+		delete(dataItem, "childData")
+	}
+
+	// 如果有父ID，设置parent_id字段
+	if parentID != "" {
+		dataItem["parent_id"] = parentID
+	}
+
+	// 设置字段值和系统字段
+	if err := setRecordFields(record, dataItem, validFields, isUpdate); err != nil {
+		return fmt.Errorf("设置记录字段失败 (%s): %w", context, err)
+	}
+
+	// 保存记录
+	if err := txApp.Save(record); err != nil {
+		action := "保存"
+		if isUpdate {
+			action = "更新"
+		}
+		return fmt.Errorf("%s失败 (%s): %w", action, context, err)
+	}
+
+	// 递归处理子记录（如果存在childData）
+	if len(childData) > 0 {
+		currentRecordID := record.Id
+		for j, childItem := range childData {
+			childContext := fmt.Sprintf("%s的第 %d 个子记录", context, j+1)
+			if err := importRecordRecursively(txApp, collection, childItem, uniqueFields, validFields, currentRecordID, childContext); err != nil {
+				return err
+			}
 		}
 	}
 
