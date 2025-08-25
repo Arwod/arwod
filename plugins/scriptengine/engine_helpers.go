@@ -116,8 +116,8 @@ func (e *ScriptEngine) loadScripts() error {
 	// Query scripts from database
 	records, err := e.app.FindRecordsByFilter(
 		"js_scripts",
-		"enabled = true",
-		"-priority",
+		"status = 'active'",
+		"-version",
 		0,
 		0,
 	)
@@ -127,16 +127,18 @@ func (e *ScriptEngine) loadScripts() error {
 		return nil
 	}
 
+	e.logger.Info("Found scripts to load", "count", len(records))
+
 	// Convert records to scripts
 	for _, record := range records {
 		script := &Script{
 			ID:         record.Id,
 			Name:       record.GetString("name"),
-			Category:   record.GetString("category"),
-			Content:    record.GetString("script_content"),
-			Enabled:    record.GetBool("enabled"),
-			Priority:   record.GetInt("priority"),
-			SourceType: record.GetString("source_type"),
+			Category:   record.GetString("trigger_type"),
+			Content:    record.GetString("content"),
+			Enabled:    record.GetString("status") == "active",
+			Priority:   record.GetInt("version"),
+			SourceType: "database",
 			CreatedAt:  record.GetDateTime("created").Time(),
 			UpdatedAt:  record.GetDateTime("updated").Time(),
 		}
@@ -149,12 +151,48 @@ func (e *ScriptEngine) loadScripts() error {
 			}
 		}
 
+		e.logger.Info("Attempting to load script", "name", script.Name, "category", script.Category, "id", script.ID)
 		if err := e.LoadScript(script); err != nil {
-			e.logger.Error("Failed to load script", "name", script.Name, "error", err)
+			e.logger.Error("Failed to load script", "name", script.Name, "id", script.ID, "category", script.Category, "error", err)
+		} else {
+			e.logger.Info("Successfully loaded script", "name", script.Name, "id", script.ID)
 		}
 	}
 
 	return nil
+}
+
+// loadScriptFromDatabase loads a single script from database by ID
+func (e *ScriptEngine) loadScriptFromDatabase(scriptID string) error {
+	// Query specific script from database
+	record, err := e.app.FindRecordById("js_scripts", scriptID)
+	if err != nil {
+		return fmt.Errorf("script not found in database: %s", scriptID)
+	}
+
+	// Convert record to script
+	script := &Script{
+		ID:         record.Id,
+		Name:       record.GetString("name"),
+		Category:   record.GetString("trigger_type"),
+		Content:    record.GetString("content"),
+		Enabled:    record.GetString("status") == "active",
+		Priority:   record.GetInt("version"),
+		SourceType: "database",
+		CreatedAt:  record.GetDateTime("created").Time(),
+		UpdatedAt:  record.GetDateTime("updated").Time(),
+	}
+
+	// Parse metadata
+	if metadataStr := record.GetString("metadata"); metadataStr != "" {
+		var metadata map[string]interface{}
+		if err := json.Unmarshal([]byte(metadataStr), &metadata); err == nil {
+			script.Metadata = metadata
+		}
+	}
+
+	// Load script into memory
+	return e.LoadScript(script)
 }
 
 // executeScript executes a script with the given input data
@@ -239,7 +277,7 @@ func (e *ScriptEngine) validateScript(script *Script) error {
 	}
 
 	// Validate category
-	validCategories := []string{"hooks", "router", "cron", "dbx", "mails", "security", "filesystem", "filepath", "os", "forms", "apis", "http"}
+	validCategories := []string{"manual", "hook", "router", "cron", "dbx", "mails", "security", "filesystem", "filepath", "os", "forms", "apis", "http"}
 	validCategory := false
 	for _, cat := range validCategories {
 		if script.Category == cat {
@@ -267,6 +305,13 @@ func (e *ScriptEngine) validateScript(script *Script) error {
 		"warn":  func(args ...interface{}) {},
 		"info":  func(args ...interface{}) {},
 	})
+	// Add $input mock object for syntax validation
+	vm.Set("$input", map[string]interface{}{})
+	// Add other common variables that might be used in scripts
+	vm.Set("$app", map[string]interface{}{})
+	vm.Set("$record", map[string]interface{}{})
+	vm.Set("$admin", map[string]interface{}{})
+	vm.Set("$authRecord", map[string]interface{}{})
 	_, err := vm.RunString(script.Content)
 	if err != nil {
 		return fmt.Errorf("script syntax validation failed: %w", err)

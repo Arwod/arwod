@@ -137,8 +137,20 @@ func (e *ScriptEngine) ExecuteScript(scriptID string, inputData map[string]inter
 	script, exists := e.scripts[scriptID]
 	e.scriptsMu.RUnlock()
 
+	// If script not found in memory, try to load from database
 	if !exists {
-		return nil, fmt.Errorf("script not found: %s", scriptID)
+		if err := e.loadScriptFromDatabase(scriptID); err != nil {
+			return nil, fmt.Errorf("script not found: %s", scriptID)
+		}
+		
+		// Try again after loading
+		e.scriptsMu.RLock()
+		script, exists = e.scripts[scriptID]
+		e.scriptsMu.RUnlock()
+		
+		if !exists {
+			return nil, fmt.Errorf("script not found: %s", scriptID)
+		}
 	}
 
 	if !script.Enabled {
