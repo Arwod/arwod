@@ -3,7 +3,7 @@
     import { link } from "svelte-spa-router";
     import ApiClient from "@/utils/ApiClient";
     import CommonHelper from "@/utils/CommonHelper";
-    import PageWrapper from "@/components/base/PageWrapper.svelte";
+
     import RefreshButton from "@/components/base/RefreshButton.svelte";
     import Field from "@/components/base/Field.svelte";
     import ScriptsSidebar from "@/components/scripts/ScriptsSidebar.svelte";
@@ -297,7 +297,7 @@
     }
 </script>
 
-<PageWrapper>
+<div class="page-wrapper scripts-layout">
     <ScriptsSidebar />
 
     <main class="page-content" tabindex="-1">
@@ -591,7 +591,7 @@
             </div>
         </div>
     </main>
-</PageWrapper>
+</div>
 
 <style>
     .performance-chart {

@@ -4,7 +4,7 @@
     import active from "svelte-spa-router/active";
     import CommonHelper from "@/utils/CommonHelper";
     import ApiClient from "@/utils/ApiClient";
-    import PageWrapper from "@/components/base/PageWrapper.svelte";
+
     import Searchbar from "@/components/base/Searchbar.svelte";
     import RefreshButton from "@/components/base/RefreshButton.svelte";
     import FormattedDate from "@/components/base/FormattedDate.svelte";
@@ -202,7 +202,7 @@
     }
 </script>
 
-<PageWrapper>
+<div class="page-wrapper scripts-layout">
     <ScriptsSidebar />
 
     <main class="page-content" tabindex="-1">
@@ -408,6 +408,6 @@
             </div>
         {/if}
     </main>
-</PageWrapper>
+</div>
 
 <ScriptLogDetailsPanel bind:this={detailsPanel} />

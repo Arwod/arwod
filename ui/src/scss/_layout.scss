@@ -369,4 +369,15 @@
             flex-direction: column;
         }
     }
+    &.scripts-layout {
+        display: flex;
+        flex-direction: row;
+        min-height: 100vh;
+        .page-content {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: var(--baseSpacing);
+        }
+    }
 }
