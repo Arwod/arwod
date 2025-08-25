@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
@@ -13,6 +14,7 @@ import (
 	"github.com/pocketbase/pocketbase/plugins/ghupdate"
 	"github.com/pocketbase/pocketbase/plugins/jsvm"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
+	"github.com/pocketbase/pocketbase/plugins/scriptengine"
 	"github.com/pocketbase/pocketbase/tools/hook"
 )
 
@@ -91,6 +93,13 @@ func main() {
 		HooksDir:      hooksDir,
 		HooksWatch:    hooksWatch,
 		HooksPoolSize: hooksPool,
+	})
+
+	// load scriptengine (script management)
+	scriptengine.MustRegister(app, scriptengine.Config{
+		PoolSize:         10,
+		MaxExecutionTime: 30 * time.Second,
+		EnableSandbox:    true,
 	})
 
 	// migrate command (with js templates)

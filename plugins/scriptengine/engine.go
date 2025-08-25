@@ -1,5 +1,12 @@
 // Package scriptengine implements a JavaScript script management engine for PocketBase.
 // It provides script execution, management, and monitoring capabilities.
+//
+// Example:
+//
+//	scriptengine.MustRegister(app, scriptengine.Config{
+//		PoolSize: 10,
+//		MaxExecutionTime: 30 * time.Second,
+//	})
 package scriptengine
 
 import (
@@ -193,6 +200,9 @@ func (e *ScriptEngine) RegisterRoutes(r *router.RouterGroup[*core.RequestEvent])
 		r.Route(method, path, handler)
 	}
 
+	// Register management API routes
+	e.RegisterScriptAPIs(r)
+
 	return nil
 }
 
@@ -319,4 +329,72 @@ func (e *ScriptEngine) GetStats() map[string]interface{} {
 	stats["categories"] = categories
 
 	return stats
+}
+
+// MustRegister registers the scriptengine plugin in the provided app instance.
+// It panics if the registration fails.
+func MustRegister(app core.App, config Config) {
+	if err := Register(app, config); err != nil {
+		panic(err)
+	}
+}
+
+// Register registers the scriptengine plugin in the provided app instance.
+func Register(app core.App, config Config) error {
+	// Set default values
+	if config.PoolSize <= 0 {
+		config.PoolSize = 5
+	}
+	if config.MaxExecutionTime <= 0 {
+		config.MaxExecutionTime = 30 * time.Second
+	}
+	if config.LogLevel == 0 {
+		config.LogLevel = slog.LevelInfo
+	}
+
+	// Create script engine instance
+	engine := NewScriptEngine(app, config)
+
+	// Register on app bootstrap
+	app.OnBootstrap().BindFunc(func(e *core.BootstrapEvent) error {
+		err := e.Next()
+		if err != nil {
+			return err
+		}
+
+		// Start the script engine
+		if err := engine.Start(); err != nil {
+			return fmt.Errorf("failed to start script engine: %w", err)
+		}
+
+		return nil
+	})
+
+	// Register API routes on serve
+	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
+		// Register script engine API routes BEFORE calling Next()
+		if err := engine.RegisterRoutes(e.Router.Group("/api/scripts")); err != nil {
+			return fmt.Errorf("failed to register script engine routes: %w", err)
+		}
+
+		// Continue with the serve process
+		return e.Next()
+	})
+
+	// Register cleanup on terminate
+	app.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+		err := e.Next()
+		if err != nil {
+			return err
+		}
+
+		// Stop the script engine
+		if err := engine.Stop(); err != nil {
+			return fmt.Errorf("failed to stop script engine: %w", err)
+		}
+
+		return nil
+	})
+
+	return nil
 }

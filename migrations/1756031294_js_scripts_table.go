@@ -14,6 +14,7 @@ func float64Ptr(v float64) *float64 {
 
 // JavaScript脚本管理系统表名常量
 const (
+	Table_EventsDict      = "_events_dict"
 	Table_JsScripts       = "js_scripts"
 	Table_JsExecutionLogs = "js_execution_logs"
 )
@@ -22,6 +23,16 @@ func init() {
 	// 按依赖关系排序的表创建配置
 	// 创建顺序：js_scripts -> js_execution_logs
 	var tableCreationRequests = []TableCreationRequest{
+		// 创建一个事件字典表，系统支持的可以通过js拓展的事件类型通过字典维护
+		{
+			TableName: Table_EventsDict,
+			Fields: []core.Field{
+				&core.TextField{Name: "name", Required: true, Max: 100},
+				&core.RelationField{Name: "parent_id", Required: false, MaxSelect: 1, CollectionId: Table_EventsDict},
+				&core.TextField{Name: "description", Required: false, Max: 500},
+			},
+			System: true,
+		},
 		{
 			TableName: Table_JsScripts,
 			Fields: []core.Field{
@@ -32,9 +43,9 @@ func init() {
 				&core.TextField{Name: "trigger_config", Required: false}, // JSON格式的触发器配置
 				&core.SelectField{Name: "status", Required: true, MaxSelect: 1, Values: []string{"active", "inactive"}},
 				&core.NumberField{Name: "timeout", Required: false, Min: float64Ptr(1.0), Max: float64Ptr(300.0)}, // 超时时间（秒）
-				&core.TextField{Name: "tags", Required: false, Max: 200}, // 标签，逗号分隔
-				&core.NumberField{Name: "version", Required: true, Min: float64Ptr(1.0)}, // 版本号
-				&core.BoolField{Name: "is_system", Required: false}, // 是否系统脚本
+				&core.TextField{Name: "tags", Required: false, Max: 200},                                          // 标签，逗号分隔
+				&core.NumberField{Name: "version", Required: true, Min: float64Ptr(1.0)},                          // 版本号
+				&core.BoolField{Name: "is_system", Required: false},                                               // 是否系统脚本
 			},
 			Indexes: []string{
 				"CREATE UNIQUE INDEX `idx_js_scripts_name_%s` ON `%s` (`name`)",
@@ -55,11 +66,11 @@ func init() {
 				&core.DateField{Name: "start_time", Required: true},
 				&core.DateField{Name: "end_time", Required: false},
 				&core.NumberField{Name: "execution_time", Required: false, Min: float64Ptr(0.0)}, // 执行时间（毫秒）
-				&core.TextField{Name: "output", Required: false}, // 脚本输出
-				&core.TextField{Name: "error_message", Required: false}, // 错误信息
-				&core.TextField{Name: "stack_trace", Required: false}, // 错误堆栈
-				&core.NumberField{Name: "memory_usage", Required: false, Min: float64Ptr(0.0)}, // 内存使用量（KB）
-				&core.NumberField{Name: "cpu_usage", Required: false, Min: float64Ptr(0.0)}, // CPU使用率（%）
+				&core.TextField{Name: "output", Required: false},                                 // 脚本输出
+				&core.TextField{Name: "error_message", Required: false},                          // 错误信息
+				&core.TextField{Name: "stack_trace", Required: false},                            // 错误堆栈
+				&core.NumberField{Name: "memory_usage", Required: false, Min: float64Ptr(0.0)},   // 内存使用量（KB）
+				&core.NumberField{Name: "cpu_usage", Required: false, Min: float64Ptr(0.0)},      // CPU使用率（%）
 			},
 			Indexes: []string{
 				"CREATE INDEX `idx_js_execution_logs_script_id_%s` ON `%s` (`script_id`)",
