@@ -10,6 +10,8 @@
     <a href="https://pkg.go.dev/github.com/pocketbase/pocketbase" target="_blank" rel="noopener"><img src="https://godoc.org/github.com/pocketbase/pocketbase?status.svg" alt="Go package documentation" /></a>
 </p>
 
+**A**ll **R**eside **W**ithin **O**ne **D**atabase
+
 [PocketBase](https://pocketbase.io) is an open source Go backend that includes:
 
 - embedded database (_SQLite_) with **realtime subscriptions**
